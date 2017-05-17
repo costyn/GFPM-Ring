@@ -502,11 +502,11 @@ void whiteStripe() {
 #endif
 
 
+// This routine needs pitch/roll information in floats, so we need to retrieve it separately
+//  Suggestions how to fix this/clean it up welcome.
+
 void gLed() {
-  // orientation/motion vars
   Quaternion quat;        // [w, x, y, z]         quaternion container
-  VectorInt16 aa;         // [x, y, z]            accel sensor measurements
-  VectorInt16 aaReal;     // [x, y, z]            gravity-free accel sensor measurements
   VectorFloat gravity;    // [x, y, z]            gravity vector
   float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
@@ -514,49 +514,76 @@ void gLed() {
   mpu.dmpGetGravity(&gravity, &quat);
   mpu.dmpGetYawPitchRoll(ypr, &quat, &gravity);
 
-  float myYprY = (ypr[0] * 180 / M_PI) ;
-  float myYprP = (ypr[1] * 180 / M_PI) ;
+  float myYprP = (ypr[1] * 180 / M_PI) ;  // Convert from radians to degrees:
   float myYprR = (ypr[2] * 180 / M_PI) ;
 
-  int myLedPos = 0 ;
+  int targetLedPos = 0 ;
+  static int currentLedPos = 0 ;
   int ratio = 0 ;
-
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  int mySpeed = round( (abs(myYprP) + abs(myYprR) ) * 100 );
+  taskLedModeSelect.setInterval( map( mySpeed, 0, 9000, 35, 5) ) ;
 
   if ( myYprR < 0 and myYprP < 0 ) {
-//    fill_gradient(leds, 0, CHSV(0, 0, MAX_BRIGHT), 14, CHSV(0, 0, MAX_BRIGHT), SHORTEST_HUES);
     ratio =  (abs( myYprP ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    myLedPos = map( ratio , 0, 100, 0 , 14 );
+    targetLedPos = map( ratio, 0, 100, 0 , 14 );
 
   } else if ( myYprR > 0 and myYprP < 0 ) {
-//    fill_gradient(leds, 15, CHSV(0, 0, MAX_BRIGHT), 29, CHSV(0, 0, MAX_BRIGHT), SHORTEST_HUES);
     ratio =  (abs( myYprR ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    myLedPos = map( ratio , 0, 100, 15 , 29 );
-    
+    targetLedPos = map( ratio, 0, 100, 15 , 29 );
+
   } else if ( myYprR > 0 and myYprP > 0 ) {
-//    fill_gradient(leds, 30, CHSV(0, 0, MAX_BRIGHT), 44, CHSV(0, 0, MAX_BRIGHT), SHORTEST_HUES);
     ratio =  (abs( myYprP ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    myLedPos = map( ratio , 0, 100, 30 , 44 );
-    
+    targetLedPos = map( ratio, 0, 100, 30 , 44 );
+
   } else if ( myYprR < 0 and myYprP > 0 ) {
-//    fill_gradient(leds, 45, CHSV(0, 0, MAX_BRIGHT), 59, CHSV(0, 0, MAX_BRIGHT), SHORTEST_HUES);
     ratio =  (abs( myYprR ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    myLedPos = map( ratio , 0, 100, 45 , 59 );
+    targetLedPos = map( ratio, 0, 100, 45 , 60 );
   } else {
-    DEBUG_PRINT("\tNoooo\t") ;
+    DEBUG_PRINT(F("\tNoooo\t")) ;  // This should never happen
   }
-  leds[myLedPos] = CHSV( 0, 255, MAX_BRIGHT);
+
+  if ( currentLedPos != targetLedPos ) {
+    bool goClockwise = true ;
+
+    // http://stackoverflow.com/questions/7428718/algorithm-or-formula-for-the-shortest-direction-of-travel-between-two-degrees-on
+
+    if ((targetLedPos - currentLedPos + 60) % 60 < 30) {
+      goClockwise = true ;
+    } else {
+      goClockwise = false  ;
+    }
+
+    if ( goClockwise ) {
+      currentLedPos++ ;
+      if ( currentLedPos > 59 ) {
+        currentLedPos = 0 ;
+      }
+    } else {
+      currentLedPos-- ;
+      if ( currentLedPos < 0 ) {
+        currentLedPos = 59 ;
+      }
+    }
+
+  }
+
+  leds[currentLedPos] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
+
+  //leds[currentLedPos] = CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT);
 
   DEBUG_PRINT(myYprP) ;
   DEBUG_PRINT("\t") ;
   DEBUG_PRINT(myYprR) ;
   DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(ratio) ;
-
+  DEBUG_PRINT(targetLedPos) ;
+  DEBUG_PRINT("\t") ;
+  DEBUG_PRINT(currentLedPos) ;
+  DEBUG_PRINT("\t") ;
+  DEBUG_PRINT(mySpeed) ;
   DEBUG_PRINTLN() ;
 
   FastLED.show();
-  fadeall(254);
+  fadeall(200);
 }
 
 

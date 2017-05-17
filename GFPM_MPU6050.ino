@@ -48,7 +48,6 @@ void getYPRAccel() {
   VectorFloat gravity;    // [x, y, z]            gravity vector
   float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
 
-
   mpu.dmpGetQuaternion(&quat, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &quat);
   mpu.dmpGetYawPitchRoll(ypr, &quat, &gravity);

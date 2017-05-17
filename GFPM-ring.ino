@@ -16,7 +16,7 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 
 // Uncomment for debug output to Serial.
- #define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x)       Serial.print (x)
@@ -69,9 +69,6 @@ const char *routines[] = {
   "twirl4",     // 10
   "twirl5",     // 11
   "twirl6",     // 12
-  "fire2012",   // 13
-  "cylon",      // 14
-  "cylonmulti", // 15
   "fglitter",   // 16
   "dglitter",   // 17
   "pulse2",     // 18
@@ -322,7 +319,7 @@ void ledModeSelect() {
   } else if ( strcmp(routines[ledMode], "gled") == 0 ) {
     gLed() ;
     taskGetDMPData.enableIfNot() ;
-    taskLedModeSelect.setInterval( 25 ) ;
+    
     
 #ifdef WHITESTRIPE
     taskWhiteStripe.disable() ;
