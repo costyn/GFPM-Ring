@@ -8,6 +8,7 @@
    - heartbeat pulse
    - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I
    - two "faders" moving back and forth
+   - level meter moving back and forth
 */
 
 #include <FastLED.h>
@@ -16,7 +17,7 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 
 // Uncomment for debug output to Serial.
-// #define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x)       Serial.print (x)
@@ -28,6 +29,7 @@
 #define DEBUG_PRINTLN(x)
 #endif
 
+#define CHIPSET     WS2812B
 #define LED_PIN     12   // which pin your Neopixels are connected to
 #define NUM_LEDS    60   // how many LEDs you have
 #define MAX_BRIGHT  150  // 0-255, higher number is brighter. 
@@ -40,7 +42,7 @@
 #define LEDMODE_SELECT_DEFAULT_INTERVAL 50 // default scheduling time for LEDMODESELECT
 #define PALETTE_SPEED  15                 // Default How fast the palette colors move.   Higher delay = slower movement.
 #define FIRE_SPEED  85                    // Default Fire Speed; delay in millseconds. Higher delay = slower movement.
-#define CYLON_SPEED 20                    // Default Cylon Speed; delay in millseconds. Higher delay = slower movement.
+#define CYLON_SPEED 15                    // Default Cylon Speed; delay in millseconds. Higher delay = slower movement.
 #define FADEGLITTER_SPEED 10              // Default delay in millseconds. Higher delay = slower movement.
 #define DISCOGLITTER_SPEED 20             // Default delay in millseconds. Higher delay = slower movement.
 
@@ -53,7 +55,7 @@ CRGB leds[NUM_LEDS];
 unsigned long lastButtonChange = 0; // button debounce timer.
 
 
-byte ledMode = 23 ; // Which mode do we start with
+byte ledMode = 21 ; // Which mode do we start with
 
 const char *routines[] = {
   "rb",         // 0
@@ -65,19 +67,22 @@ const char *routines[] = {
   "forest",     // 6
   "twirl1",     // 7
   "twirl2",     // 8
-  "twirl3",     // 9
-  "twirl4",     // 10
-  "twirl5",     // 11
-  "twirl6",     // 12
-  "fglitter",   // 16
-  "dglitter",   // 17
-  "pulse2",     // 18
-  "pulsestatic",// 19
-  "racers",     // 20
-  "wave",       // 21
-  "shakeit",    // 22
-  "strobe2",    // 23
-  "gled",       // 24
+  "twirl4",     // 9
+  "twirl6",     // 10
+  "twirl2o",    // 11
+  "twirl4o",    // 12
+  "twirl6o",    // 13
+  "fglitter",   // 14
+  "dglitter",   // 15
+  "pulse2",     // 16
+  "pulsestatic",// 17
+  "racers",     // 18
+  "wave",       // 19
+  "shakeit",    // 20
+  "strobe2",    // 21
+  "gled",       // 22
+  "heartbeat",  // 23
+  "ggradient",  // 24
   "black"       // 25
 };
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
@@ -142,7 +147,7 @@ Task taskPrintDebugging( 100, TASK_FOREVER, &printDebugging);
 
 void setup() {
   delay( 1000 ); // power-up safety delay
-  FastLED.addLeds<WS2812B, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(  MAX_BRIGHT );
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), shortKeyPress, RISING);
@@ -180,12 +185,22 @@ void setup() {
 
   // Ring MPU
   // -287  4 1560  -29 -4  15
-  mpu.setXAccelOffset(-287);
-  mpu.setYAccelOffset(-4);
-  mpu.setZAccelOffset(1560);
-  mpu.setXGyroOffset(29);
-  mpu.setYGyroOffset(-4);
-  mpu.setZGyroOffset(15);
+  // -381  209 1476  -24 0 -23
+  mpu.setXAccelOffset(-381 );
+  mpu.setYAccelOffset(209);
+  mpu.setZAccelOffset(1476);
+  mpu.setXGyroOffset(-24);
+  mpu.setYGyroOffset(0);
+  mpu.setZGyroOffset(-23);
+
+  /*
+    mpu.setXAccelOffset(-287);
+    mpu.setYAccelOffset(-4);
+    mpu.setZAccelOffset(1560);
+    mpu.setXGyroOffset(29);
+    mpu.setYGyroOffset(-4);
+    mpu.setZGyroOffset(15);
+  */
 
   if (devStatus == 0) {
     mpu.setDMPEnabled(true);
@@ -254,7 +269,28 @@ void ledModeSelect() {
 
 
   } else if ( ledMode >= 7 and ledMode <= 13 ) {
-    twirlers( ledMode - 6 ) ;
+    if ( ledMode == 7 ) {
+      twirlers( 1, false ) ;
+    }
+    if ( ledMode == 8 ) {
+      twirlers( 2, false ) ;
+    }
+    if ( ledMode == 9 ) {
+      twirlers( 4, false ) ;
+    }
+    if ( ledMode == 10 ) {
+      twirlers( 6, false ) ;
+    }
+    if ( ledMode == 11 ) {
+      twirlers( 2, true ) ;
+    }
+    if ( ledMode == 12 ) {
+      twirlers( 4, true ) ;
+    }
+    if ( ledMode == 13 ) {
+      twirlers( 6, true ) ;
+    }
+
     taskLedModeSelect.setInterval( CYLON_SPEED ) ;
     taskGetDMPData.enableIfNot() ;
 #ifdef WHITESTRIPE
@@ -274,7 +310,7 @@ void ledModeSelect() {
     taskWhiteStripe.enableIfNot() ;
 #endif
 
-    
+
     // Fade glitter
   } else if ( strcmp(routines[ledMode], "fglitter") == 0 ) {
     fadeGlitter() ;
@@ -291,36 +327,19 @@ void ledModeSelect() {
   } else if ( strcmp(routines[ledMode], "dglitter") == 0 ) {
     discoGlitter() ;
     //    taskLedModeSelect.setInterval( DISCOGLITTER_SPEED ) ;
-    taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 4000), 0, 4000, 40, 5 )) ;
+    taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 2500), 0, 2500, 40, 2 )) ;
     taskGetDMPData.enableIfNot() ;
     FastLED.setBrightness( MAX_BRIGHT ) ;
 #ifdef WHITESTRIPE
     taskWhiteStripe.enableIfNot() ;
 #endif
 
-
-    // With thanks to Hans for the strobe idea https://www.tweaking4all.nl/hardware/arduino/adruino-led-strip-effecten/#strobe
-  } else if ( strcmp(routines[ledMode], "strobe") == 0 ) {
-    //    setInterval is done in the subroutine itself
-    strobe( 0, 10 ) ;
-    taskGetDMPData.enableIfNot() ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.enableIfNot() ;
-#endif
-
-  } else if ( strcmp(routines[ledMode], "flashbpm") == 0 ) {
-    strobe( 130, 2 ) ;
-    taskGetDMPData.enableIfNot() ;
-    FastLED.setBrightness( MAX_BRIGHT ) ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.enableIfNot() ;
-#endif
 
   } else if ( strcmp(routines[ledMode], "gled") == 0 ) {
     gLed() ;
     taskGetDMPData.enableIfNot() ;
-    
-    
+
+
 #ifdef WHITESTRIPE
     taskWhiteStripe.disable() ;
 #endif
@@ -383,30 +402,22 @@ void ledModeSelect() {
     taskWhiteStripe.disable() ;
 #endif
 
+  } else if ( strcmp(routines[ledMode], "heartbeat") == 0 ) {
+    heartbeat() ;
+    taskLedModeSelect.setInterval( 10 ) ;
+    taskGetDMPData.disable() ;
+#ifdef WHITESTRIPE
+    taskWhiteStripe.disable() ;
+#endif
+
+  } else if ( strcmp(routines[ledMode], "ggradient") == 0 ) {
+    gGradient() ;
+    taskLedModeSelect.setInterval( 10 ) ;
+    taskGetDMPData.enableIfNot() ;
+#ifdef WHITESTRIPE
+    taskWhiteStripe.disable() ;
+#endif
+
   }
 }
-
-
-
-
-// interrupt triggered button press with a very simple debounce (discard multiple button presses < 300ms)
-void shortKeyPress() {
-  if ( millis() - lastButtonChange > 300 ) {
-    ledMode++;
-    DEBUG_PRINT(F("ledMode = ")) ;
-    DEBUG_PRINT( routines[ledMode] ) ;
-    DEBUG_PRINT(F(" mode ")) ;
-    DEBUG_PRINTLN( ledMode ) ;
-
-    if (ledMode >= NUMROUTINES ) {
-      ledMode = 0;
-    }
-
-    lastButtonChange = millis() ;
-  } else {
-    //    DEBUG_PRINTLN(F("Too short an interval") ) ;
-  }
-}
-
-
 

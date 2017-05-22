@@ -23,19 +23,11 @@ void FillLEDsFromPaletteColors() {
   }
   addGlitter(80);
 
-  FastLED.setBrightness( map( constrain(aaRealZ, 0, MAX_POS_ACCEL), 0, MAX_POS_ACCEL, MAX_BRIGHT, 40 )) ;
+  FastLED.setBrightness( map( constrain(aaRealZ, 0, MAX_POS_ACCEL), 0, MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
 
   FastLED.show();
 }
 
-void addGlitter( fract8 chanceOfGlitter)
-{
-  for ( int i = 0 ; i < 4 ; i++ ) {
-    if ( random8() < chanceOfGlitter) {
-      leds[ random16(NUM_LEDS) ] += CRGB::White;
-    }
-  }
-}
 
 /*
   // Not used anywhere, but feel free to replace addGlitter with addColorGlitter in FillLEDsFromPaletteColors() above
@@ -57,98 +49,10 @@ void fadeGlitter() {
 
 void discoGlitter() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
-  addGlitter(map( constrain( activityLevel(), 0, 3000), 0, 3000, 70, 255 ));
+  addGlitter(map( constrain( activityLevel(), 0, 3000), 0, 3000, 100, 255 ));
   FastLED.show();
 }
 
-
-// If you want to restrict the color cycling to a HSV range, adjust these:
-#define STARTHUE 0
-#define ENDHUE 255
-
-void cylon() {
-  static uint8_t ledPosAdder = 1 ;
-  static uint8_t ledPos = 0;
-
-  leds[ledPos] = CHSV( map( yprX, 0, 360, STARTHUE, ENDHUE ) , 255, MAX_BRIGHT);
-
-  if ( ledPos == NUM_LEDS ) {
-    ledPos = 0 ;
-  } else {
-    ledPos += ledPosAdder ;
-  }
-
-  FastLED.show();
-  fadeall(245);
-}
-
-#define POS1 1
-#define POS2 round(NUM_LEDS/3)
-#define POS3 round(NUM_LEDS/3) + round(NUM_LEDS/3)
-
-
-void cylonMulti() {
-  static uint8_t ledPos[] = {POS1, POS2, POS3}; // Starting position
-  static int ledAdd[] = {1, 1, 1}; // Starting direction
-
-  for (int i = 0; i < 3; i++) {
-    if ( ledPos[i] + ledAdd[i] == NUM_LEDS ) {
-      ledPos[i] = 0 ;
-    } else {
-      ledPos[i] += ledAdd[i] ;
-    }
-
-    leds[ledPos[i]] = CHSV( (map( yprX, 0, 360, 0, 255 ) + (i * 85)) % 255, 255, MAX_BRIGHT);
-  }
-
-  FastLED.show();
-  fadeall(170);
-}
-
-
-void fadeall(uint8_t fade_all_speed) {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i].nscale8(fade_all_speed);
-  }
-}
-
-void brightall(uint8_t bright_all_speed) {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i] += leds[i].scale8(bright_all_speed) ;
-  }
-}
-
-#define STROBE_ON_TIME 40
-
-// Pretty awful - current timings are like lightning
-void strobe( int bpm, uint8_t numStrobes ) {
-  static uint8_t strobesToDo = numStrobes ;
-
-  taskLedModeSelect.setInterval(STROBE_ON_TIME); // run this task every STROBE_ON_TIME seconds
-
-  //  DEBUG_PRINTLN( taskLedModeSelect.getRunCounter() ) ;
-
-  if ( (taskLedModeSelect.getRunCounter() % 2 ) == 0 ) {
-    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, 255) );
-  } else {
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-  }
-  FastLED.show();
-
-  // use getRunCounter (number of iterations of taskLedModeSelect), and if evenly divisible by strobesToDo, wait a bit
-  if ( (taskLedModeSelect.getRunCounter() % strobesToDo) == 0 ) {
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    FastLED.show();
-    if ( bpm != 0 ) {
-      // If we want to numStrobes of STROBE_ON_TIME and numStrobes of black we need to subtract it from the BPM to delay calculation
-      taskLedModeSelect.setInterval( round(60000 / bpm) - ( STROBE_ON_TIME * numStrobes * 2) );
-    } else {
-      // Lightning simulation
-      strobesToDo = random8(4, 12) ;
-      taskLedModeSelect.setInterval(random16(1000, 2500));
-    }
-  }
-}
 
 #define S_SENSITIVITY 3000  // lower for less movement to trigger accelerometer routines
 
@@ -160,44 +64,6 @@ void strobe2() {
   }
   FastLED.show();
 }
-
-/*
-  void pulse() {
-  static uint8_t startPixelPos = 0 ;
-  uint8_t endPixelPos = startPixelPos + 20 ;
-  uint8_t middlePixelPos = endPixelPos - round( (endPixelPos - startPixelPos) / 2 ) ;
-
-  uint8_t hue = map( yprX, 0, 360, 0, MAX_BRIGHT ) ;
-
-  static int brightness = 0;
-  static int brightAdder = 15;
-  static int brightStartNew = random8(1, 30) ;
-
-  // Writing outside the array gives weird effects
-  startPixelPos  = constrain(startPixelPos, 0, NUM_LEDS - 1) ;
-  middlePixelPos = constrain(middlePixelPos, 0, NUM_LEDS - 1) ;
-  endPixelPos    = constrain(endPixelPos, 0, NUM_LEDS - 1) ;
-
-  brightness += brightAdder ;
-  if ( brightness >= 250 ) {
-    brightAdder = random8(5, 15) * -1 ;
-    brightness += brightAdder ;
-  }
-  if ( brightness <= 0 ) {
-    brightAdder = 0 ;
-    brightness = 0 ;
-    if ( startPixelPos == brightStartNew ) {
-      brightAdder = 15;
-      brightStartNew = random8(1, 70) ;
-    }
-  }
-
-  //  fill_solid(leds, NUM_LEDS, CRGB::Black);
-  fill_gradient(leds, startPixelPos, CHSV(hue, 255, 0), middlePixelPos, CHSV(hue, 255, brightness), SHORTEST_HUES);
-  fill_gradient(leds, middlePixelPos, CHSV(hue, 255, brightness), endPixelPos, CHSV(hue, 255, 0), SHORTEST_HUES);
-  FastLED.show();
-  }
-*/
 
 #define MIN_BRIGHT 10
 
@@ -505,90 +371,33 @@ void whiteStripe() {
 // This routine needs pitch/roll information in floats, so we need to retrieve it separately
 //  Suggestions how to fix this/clean it up welcome.
 
+
 void gLed() {
-  Quaternion quat;        // [w, x, y, z]         quaternion container
-  VectorFloat gravity;    // [x, y, z]            gravity vector
-  float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
-
-  mpu.dmpGetQuaternion(&quat, fifoBuffer);
-  mpu.dmpGetGravity(&gravity, &quat);
-  mpu.dmpGetYawPitchRoll(ypr, &quat, &gravity);
-
-  float myYprP = (ypr[1] * 180 / M_PI) ;  // Convert from radians to degrees:
-  float myYprR = (ypr[2] * 180 / M_PI) ;
-
-  int targetLedPos = 0 ;
-  static int currentLedPos = 0 ;
-  int ratio = 0 ;
-  int mySpeed = round( (abs(myYprP) + abs(myYprR) ) * 100 );
-  taskLedModeSelect.setInterval( map( mySpeed, 0, 9000, 35, 5) ) ;
-
-  if ( myYprR < 0 and myYprP < 0 ) {
-    ratio =  (abs( myYprP ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    targetLedPos = map( ratio, 0, 100, 0 , 14 );
-
-  } else if ( myYprR > 0 and myYprP < 0 ) {
-    ratio =  (abs( myYprR ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    targetLedPos = map( ratio, 0, 100, 15 , 29 );
-
-  } else if ( myYprR > 0 and myYprP > 0 ) {
-    ratio =  (abs( myYprP ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    targetLedPos = map( ratio, 0, 100, 30 , 44 );
-
-  } else if ( myYprR < 0 and myYprP > 0 ) {
-    ratio =  (abs( myYprR ) / (abs(myYprP) + abs(myYprR))) * 100 ;
-    targetLedPos = map( ratio, 0, 100, 45 , 60 );
-  } else {
-    DEBUG_PRINT(F("\tNoooo\t")) ;  // This should never happen
-  }
-
-  if ( currentLedPos != targetLedPos ) {
-    bool goClockwise = true ;
-
-    // http://stackoverflow.com/questions/7428718/algorithm-or-formula-for-the-shortest-direction-of-travel-between-two-degrees-on
-
-    if ((targetLedPos - currentLedPos + 60) % 60 < 30) {
-      goClockwise = true ;
-    } else {
-      goClockwise = false  ;
-    }
-
-    if ( goClockwise ) {
-      currentLedPos++ ;
-      if ( currentLedPos > 59 ) {
-        currentLedPos = 0 ;
-      }
-    } else {
-      currentLedPos-- ;
-      if ( currentLedPos < 0 ) {
-        currentLedPos = 59 ;
-      }
-    }
-
-  }
-
-  leds[currentLedPos] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
-
-  //leds[currentLedPos] = CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT);
-
-  DEBUG_PRINT(myYprP) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(myYprR) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(targetLedPos) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(currentLedPos) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(mySpeed) ;
-  DEBUG_PRINTLN() ;
-
+  leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
   FastLED.show();
   fadeall(200);
 }
 
+void gGradient() {
+  const CRGB bgColor = CRGB::Blue ;
+  int ledPos = lowestPoint() ;
+  fill_solid(leds, NUM_LEDS, bgColor );
+  fillGradientRing( ledPos, bgColor, ledPos+10, CRGB::Red ) ;
+  fillGradientRing( ledPos + 11, CRGB::Red, ledPos + 20, bgColor ) ;
+  FastLED.show();
+}
+
+void gradientBounce() {
 
 
-void twirlers(int numTwirlers) {
+  
+}
+
+
+
+/*
+    Simple twirlers:
+  void twirlersS(int numTwirlers) {
   int pos = 0 ;
   int first = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
 
@@ -605,4 +414,131 @@ void twirlers(int numTwirlers) {
   }
 
   FastLED.show();
+  }
+*/
+
+// Counter rotating twirlers with blending
+void twirlers(int numTwirlers, bool opposing ) {
+  int pos = 0 ;
+  int clockwiseFirst = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
+  //  CRGB clockwiseColor = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter() % 255, MAX_BRIGHT, NOBLEND );
+  //  CRGB antiClockwiseColor = ColorFromPalette( PartyColors_p, (255 - taskLedModeSelect.getRunCounter()) % 255, MAX_BRIGHT, NOBLEND );
+  const CRGB clockwiseColor = CRGB::White ;
+  const CRGB antiClockwiseColor = CRGB::Red ;
+
+  if ( opposing ) {
+    fadeall(map( numTwirlers, 1, 6, 240, 180 ));
+  } else {
+    fadeall(map( numTwirlers, 1, 6, 240, 150 ));
+  }
+
+  for (int i = 0 ; i < numTwirlers ; i++) {
+    if ( (i % 2) == 0 ) {
+      pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
+      if ( leds[pos] ) { // FALSE if currently BLACK - don't blend with black
+        leds[pos] = blend( leds[pos], clockwiseColor, 128 ) ;
+      } else {
+        leds[pos] = clockwiseColor ;
+      }
+
+    } else {
+      if ( opposing ) {
+        int antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ;
+        pos = (antiClockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
+      } else {
+        pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
+      }
+      if ( leds[pos] ) { // FALSE if currently BLACK - don't blend with black
+        leds[pos] = blend( leds[pos], antiClockwiseColor, 128 ) ;
+      } else {
+        leds[pos] = antiClockwiseColor ;
+      }
+    }
+  }
+
+  FastLED.show();
 }
+
+void heartbeat() {
+
+  const int *hbTable[] = {
+    25,
+    61,
+    105,
+    153,
+    197,
+    233,
+    253,
+    255,
+    252,
+    243,
+    230,
+    213,
+    194,
+    149,
+    101,
+    105,
+    153,
+    197,
+    216,
+    233,
+    244,
+    253,
+    255,
+    255,
+    252,
+    249,
+    243,
+    237,
+    230,
+    223,
+    213,
+    206,
+    194,
+    184,
+    174,
+    162,
+    149,
+    138,
+    126,
+    112,
+    101,
+    91,
+    78,
+    69,
+    62,
+    58,
+    51,
+    47,
+    43,
+    39,
+    35,
+    29,
+    25,
+    22,
+    19,
+    15,
+    12,
+    9,
+    6,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    0
+  };
+
+  static int counter = 0 ;
+  fill_solid(leds, NUM_LEDS, CRGB::Red);
+  FastLED.setBrightness( hbTable[counter] );
+  if ( hbTable[counter] == 0 ) {
+    counter = 0 ;
+  } else {
+    counter++ ;
+  }
+  FastLED.show();
+}
+
