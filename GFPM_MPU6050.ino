@@ -61,6 +61,20 @@ void getYPRAccel() {
   aaRealX = aaReal.x ;
   aaRealY = aaReal.y ;
   aaRealZ = aaReal.z ;
+
+  int maxXY    = max( aaReal.x, aaReal.y) ;
+  int maxAccel = max( maxXY, aaReal.z) ;
+
+  static int inBeat = false;
+
+  if ( maxAccel > 6000 and inBeat == false ) {
+    inBeat = true ;
+    tapTempo.update(true);
+  } else if ( maxAccel < 6000 ) {
+    inBeat = false ;
+    tapTempo.update(false);
+  }
+
 }
 
 

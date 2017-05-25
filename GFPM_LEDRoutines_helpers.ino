@@ -1,10 +1,11 @@
 // Fill a gradient on a LED ring with any possible start positions.
 // startLed and endLed may be negative (one or both), may be larger than NUM_LEDS (one or both)
-// startLed cannot (yet) be > endLed 
+// startLed cannot (yet) be > endLed
 
 void fillGradientRing( int startLed, CRGB startColor, int endLed, CRGB endColor ) {
   if ( startLed > endLed ) {
     fill_gradient_RGB(leds, endLed, CRGB::Red, startLed, CRGB::Red); // show RED for error!
+    DEBUG_PRINTLN(F("GRMBL\t")) ;  // This should never happen
   } else {
 
     // Determine actual start and actual end (normalize using modulo):
@@ -19,10 +20,10 @@ void fillGradientRing( int startLed, CRGB startColor, int endLed, CRGB endColor 
       int ratio = round( (1 - (actualEnd / (endLed - startLed))) * 255 ) ; // determine what ratio of startColor and endColor we need at LED 0
       CRGB colorAtLEDZero = blend(startColor, endColor, ratio);
 
-      fill_gradient_RGB(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero);
-      fill_gradient_RGB(leds, 0, colorAtLEDZero, actualEnd, endColor);
+      fill_gradient_RGB(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero, SHORTEST_HUES);
+      fill_gradient_RGB(leds, 0, colorAtLEDZero, actualEnd, endColor, SHORTEST_HUES);
     } else {
-      fill_gradient_RGB(leds, actualStart, startColor, actualEnd, endColor);
+      fill_gradient_RGB(leds, actualStart, startColor, actualEnd, endColor, SHORTEST_HUES);
     }
   }
 }

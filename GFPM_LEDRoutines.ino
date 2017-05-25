@@ -53,6 +53,17 @@ void discoGlitter() {
   FastLED.show();
 }
 
+#define FLASHLENGTH 20
+
+void strobe1() {
+  if ( tapTempo.beatProgress() > 0.95 ) {
+    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT)); // yaw for color
+  } else {
+    fill_solid(leds, NUM_LEDS, CRGB::Black); // yaw for color
+  }
+  FastLED.show();
+}
+
 
 #define S_SENSITIVITY 3000  // lower for less movement to trigger accelerometer routines
 
@@ -64,6 +75,8 @@ void strobe2() {
   }
   FastLED.show();
 }
+
+
 
 #define MIN_BRIGHT 10
 
@@ -84,13 +97,13 @@ void pulse2() {
   if ( not sequenceEnd ) {
     if ( flowDir ) {
       endP-- ;
-      startP = endP - 20 ;
+      startP = endP - 10 ;
     } else {
       startP++ ;
-      endP = startP + 20 ;
+      endP = startP + 10 ;
     }
 
-    if ( startP == 89 or endP == 1 ) {
+    if ( startP == NUM_LEDS - 1 or endP == 1 ) {
       sequenceEnd = true ;
     }
 
@@ -102,12 +115,12 @@ void pulse2() {
 
     brightness += bAdder ;
     brightness = constrain(brightness, 0, MAX_BRIGHT) ;
-    if ( brightness >= 250 ) {
+    if ( brightness >= MAX_BRIGHT ) {
       bAdder = -10 ;
     }
 
-    fill_gradient(leds, startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness), SHORTEST_HUES);
-    fill_gradient(leds, middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0), SHORTEST_HUES);
+    fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
+    fillGradientRing(middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
 
   } else {
 
@@ -165,13 +178,16 @@ void pulse_static() {
 
     brightness += bAdder ;
     brightness = constrain(brightness, 0, MAX_BRIGHT) ;
-    if ( brightness >= 250 ) {
+    if ( brightness >= MAX_BRIGHT ) {
       bAdder = -5 ;
     }
 
     fill_solid(leds, NUM_LEDS, CRGB::Black);
-    fill_gradient(leds, startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness), SHORTEST_HUES);
-    fill_gradient(leds, middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0), SHORTEST_HUES);
+    fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
+    fillGradientRing(middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
+
+    //    fill_gradient(leds, startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness), SHORTEST_HUES);
+    //    fill_gradient(leds, middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0), SHORTEST_HUES);
     FastLED.show();
   }
 
@@ -181,8 +197,8 @@ void pulse_static() {
     hue = random8(0, 60) ;
     brightness = MIN_BRIGHT + 1 ;
     bAdder = 10 ;
-    startP = random8(1, 70);
-    endP = startP + 30 ;
+    startP = random8(1, NUM_LEDS - 20);
+    endP = startP + 20 ;
     sequenceEnd = false ;
     taskLedModeSelect.setInterval(random16(200, 700)) ;
   }
@@ -380,9 +396,10 @@ void gLed() {
 
 void gGradient() {
   const CRGB bgColor = CRGB::Blue ;
-  int ledPos = lowestPoint() ;
-  fill_solid(leds, NUM_LEDS, bgColor );
-  fillGradientRing( ledPos, bgColor, ledPos+10, CRGB::Red ) ;
+  //  int ledPos = lowestPoint() ;
+  int ledPos = 20 ;
+  fill_solid(leds, NUM_LEDS, CRGB::Black );
+  fillGradientRing( ledPos, bgColor, ledPos + 10, CRGB::Red ) ;
   fillGradientRing( ledPos + 11, CRGB::Red, ledPos + 20, bgColor ) ;
   FastLED.show();
 }
@@ -390,10 +407,66 @@ void gGradient() {
 void gradientBounce() {
 
 
-  
+
+}
+
+void vuMeter() {
+  static int vuLength = 1 ;
+  static bool growing = true ;
+
+  int center = NUM_LEDS / 2 ;
+  int left = center + vuLength ;
+  int right = center - vuLength ;
+
+  if ( growing ) {
+    if ( vuLength < 23 ) {
+      leds[left] = CRGB::DarkGreen ;
+      leds[right] = CRGB::DarkGreen ;
+    } else {
+      leds[left] = CRGB::Red ;
+      leds[right] = CRGB::Red ;
+    }
+  } else {
+    leds[left - 1] = CRGB::Black ;
+    leds[right + 1] = CRGB::Black;
+  }
+
+  FastLED.setBrightness( MAX_BRIGHT );
+  FastLED.show();
+
+  if ( growing ) {
+    vuLength++ ;
+  } else {
+    vuLength-- ;
+  }
+
+  if ( vuLength >= (NUM_LEDS / 2)  or vuLength <= 0 ) {
+    growing = ! growing ;
+  }
 }
 
 
+
+void vuMeter2() {
+  static int vuLength = 1 ;
+  static bool growing = true ;
+  fill_solid(leds, NUM_LEDS, CRGB::Black );
+  fill_solid(leds + (NUM_LEDS / 2 - vuLength), vuLength, CRGB::Blue );
+  fill_solid(leds + NUM_LEDS / 2, vuLength, CRGB::Red );
+
+  FastLED.setBrightness( MAX_BRIGHT );
+  FastLED.show();
+
+  if ( growing ) {
+    vuLength++ ;
+  } else {
+    vuLength-- ;
+  }
+
+  if ( vuLength >= (NUM_LEDS / 2) or vuLength <= 1 ) {
+    growing = ! growing ;
+  }
+}
 
 /*
     Simple twirlers:

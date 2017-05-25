@@ -15,6 +15,8 @@
 #include <TaskScheduler.h>
 #include <I2Cdev.h>
 #include <MPU6050_6Axis_MotionApps20.h>
+#include <ArduinoTapTempo.h>
+
 
 // Uncomment for debug output to Serial.
 //#define DEBUG
@@ -79,11 +81,12 @@ const char *routines[] = {
   "racers",     // 18
   "wave",       // 19
   "shakeit",    // 20
-  "strobe2",    // 21
-  "gled",       // 22
-  "heartbeat",  // 23
-  "ggradient",  // 24
-  "black"       // 25
+  "strobe1",    // 21
+  "strobe2",    // 22
+  "gled",       // 23
+  "heartbeat",  // 24
+  "ggradient",  // 25
+  "black"       // 26
 };
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
 
@@ -96,6 +99,9 @@ Task taskLedModeSelect( LEDMODE_SELECT_DEFAULT_INTERVAL, TASK_FOREVER, &ledModeS
 void whiteStripe() ; // prototype method
 Task taskWhiteStripe( WHITESTRIPE_SPEED, TASK_FOREVER, &whiteStripe); // routine which adds/removes tasks according to ledmode
 #endif
+
+ArduinoTapTempo tapTempo;
+
 
 //#define _TASK_SLEEP_ON_IDLE_RUN
 
@@ -228,6 +234,9 @@ void setup() {
   //  taskPrintDebugging.enable() ;
 #endif
 
+  tapTempo.setMaxBPM( 160 ) ;
+  tapTempo.setMinBPM( 110 ) ;
+
 }
 
 
@@ -297,6 +306,7 @@ void ledModeSelect() {
     taskWhiteStripe.enableIfNot() ;
 #endif
 
+
     // FastLED Fire2012 split down the middle, so the fire flows "down" from the neck of the scarf to the ends
   } else if ( strcmp(routines[ledMode], "fire2012") == 0 ) {
     Fire2012() ;
@@ -335,14 +345,14 @@ void ledModeSelect() {
 #endif
 
 
+    // Gravity LED
   } else if ( strcmp(routines[ledMode], "gled") == 0 ) {
     gLed() ;
     taskGetDMPData.enableIfNot() ;
-
-
 #ifdef WHITESTRIPE
     taskWhiteStripe.disable() ;
 #endif
+
 
     // Black - off
   } else if ( strcmp(routines[ledMode], "black") == 0 ) {
@@ -353,27 +363,20 @@ void ledModeSelect() {
 #ifdef WHITESTRIPE
     taskWhiteStripe.disable() ;
 #endif
-
     /*
 
-      } else if ( strcmp(routines[ledMode], "pulse") == 0 ) {
-        pulse() ;
-        taskLedModeSelect.setInterval( 15 ) ;
+      } else if ( strcmp(routines[ledMode], "pulse2") == 0 ) {
+        pulse2() ;
+        taskLedModeSelect.setInterval( 10 ) ;
+        taskGetDMPData.disable() ;
+
+
+      } else if ( strcmp(routines[ledMode], "pulsestatic") == 0 ) {
+        pulse_static() ;
+        taskLedModeSelect.setInterval( 8 ) ;
         taskGetDMPData.disable() ;
 
     */
-  } else if ( strcmp(routines[ledMode], "pulse2") == 0 ) {
-    pulse2() ;
-    taskLedModeSelect.setInterval( 10 ) ;
-    taskGetDMPData.disable() ;
-
-
-  } else if ( strcmp(routines[ledMode], "pulsestatic") == 0 ) {
-    pulse_static() ;
-    taskLedModeSelect.setInterval( 8 ) ;
-    taskGetDMPData.disable() ;
-
-
   } else if ( strcmp(routines[ledMode], "racers") == 0 ) {
     racingLeds() ;
     taskLedModeSelect.setInterval( 8 ) ;
@@ -402,6 +405,12 @@ void ledModeSelect() {
     taskWhiteStripe.disable() ;
 #endif
 
+  } else if ( strcmp(routines[ledMode], "strobe1") == 0 ) {
+    strobe1() ;
+    taskLedModeSelect.setInterval( 5 ) ;
+    taskGetDMPData.enableIfNot() ;
+
+
   } else if ( strcmp(routines[ledMode], "heartbeat") == 0 ) {
     heartbeat() ;
     taskLedModeSelect.setInterval( 10 ) ;
@@ -411,9 +420,9 @@ void ledModeSelect() {
 #endif
 
   } else if ( strcmp(routines[ledMode], "ggradient") == 0 ) {
-    gGradient() ;
-    taskLedModeSelect.setInterval( 10 ) ;
-    taskGetDMPData.enableIfNot() ;
+    vuMeter() ;
+    taskLedModeSelect.setInterval( 8 ) ;
+    taskGetDMPData.disable() ;
 #ifdef WHITESTRIPE
     taskWhiteStripe.disable() ;
 #endif
