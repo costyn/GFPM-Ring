@@ -1,20 +1,29 @@
+// Fill a gradient on a LED ring with any possible start positions.
+// startLed and endLed may be negative (one or both), may be larger than NUM_LEDS (one or both)
+// startLed cannot (yet) be > endLed 
+
 void fillGradientRing( int startLed, CRGB startColor, int endLed, CRGB endColor ) {
-  if( startLed >= NUM_LEDS or startLed < 0 ) {
-    startLed = startLed % NUM_LEDS ;
-  }
-
-  if ( endLed >= NUM_LEDS ) {
-    int restLed = endLed % NUM_LEDS  ;
-    int ratio = 0 ;
-    ratio = round( (1 - restLed / (endLed - startLed)) * 255 ) ;
-
-    CRGB ringEndColor = blend(startColor, endColor, ratio);
-
-    fill_gradient_RGB(leds, startLed, startColor, NUM_LEDS - 1, ringEndColor);
-    fill_gradient_RGB(leds, 0, ringEndColor, restLed, endColor);
-
+  if ( startLed > endLed ) {
+    fill_gradient_RGB(leds, endLed, CRGB::Red, startLed, CRGB::Red); // show RED for error!
   } else {
-    fill_gradient_RGB(leds, startLed, startColor, endLed, endColor);
+
+    // Determine actual start and actual end (normalize using modulo):
+    int actualStart = (startLed + NUM_LEDS) % NUM_LEDS ;
+    int actualEnd = (endLed + NUM_LEDS) % NUM_LEDS ;
+
+    // If beginning is at say 50, and end at 10, then we split the gradient in 2:
+    // * one from 50-59
+    // * one from 0-10
+    // To determine which color should be at 59 and 0 we use the blend function:
+    if ( actualStart > actualEnd ) {
+      int ratio = round( (1 - (actualEnd / (endLed - startLed))) * 255 ) ; // determine what ratio of startColor and endColor we need at LED 0
+      CRGB colorAtLEDZero = blend(startColor, endColor, ratio);
+
+      fill_gradient_RGB(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero);
+      fill_gradient_RGB(leds, 0, colorAtLEDZero, actualEnd, endColor);
+    } else {
+      fill_gradient_RGB(leds, actualStart, startColor, actualEnd, endColor);
+    }
   }
 }
 
@@ -63,7 +72,7 @@ int lowestPoint() {
 
     // http://stackoverflow.com/questions/7428718/algorithm-or-formula-for-the-shortest-direction-of-travel-between-two-degrees-on
 
-    if ((targetLedPos - currentLedPos + NUM_LEDS) % NUM_LEDS < NUM_LEDS/2) {
+    if ((targetLedPos - currentLedPos + NUM_LEDS) % NUM_LEDS < NUM_LEDS / 2) {
       goClockwise = true ;
     } else {
       goClockwise = false  ;
@@ -71,13 +80,13 @@ int lowestPoint() {
 
     if ( goClockwise ) {
       currentLedPos++ ;
-      if ( currentLedPos > NUM_LEDS-1 ) {
+      if ( currentLedPos > NUM_LEDS - 1 ) {
         currentLedPos = 0 ;
       }
     } else {
       currentLedPos-- ;
       if ( currentLedPos < 0 ) {
-        currentLedPos = NUM_LEDS-1 ;
+        currentLedPos = NUM_LEDS - 1 ;
       }
     }
 
@@ -86,20 +95,20 @@ int lowestPoint() {
   return currentLedPos ;
 
 
-/*
-  DEBUG_PRINT(myYprP) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(myYprR) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(ratio) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(targetLedPos) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(currentLedPos) ;
-  DEBUG_PRINT("\t") ;
-  DEBUG_PRINT(mySpeed) ;
-  DEBUG_PRINTLN() ;
-*/
+  /*
+    DEBUG_PRINT(myYprP) ;
+    DEBUG_PRINT("\t") ;
+    DEBUG_PRINT(myYprR) ;
+    DEBUG_PRINT("\t") ;
+    DEBUG_PRINT(ratio) ;
+    DEBUG_PRINT("\t") ;
+    DEBUG_PRINT(targetLedPos) ;
+    DEBUG_PRINT("\t") ;
+    DEBUG_PRINT(currentLedPos) ;
+    DEBUG_PRINT("\t") ;
+    DEBUG_PRINT(mySpeed) ;
+    DEBUG_PRINTLN() ;
+  */
 
 }
 

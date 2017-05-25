@@ -17,7 +17,7 @@ void FillLEDsFromPaletteColors() {
 
   uint8_t colorIndex = startIndex ;
 
-  for ( int i = 0; i < NUM_LEDS; i++) {
+  for ( uint8_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = ColorFromPalette( palettes[ledMode], colorIndex, MAX_BRIGHT, NOBLEND );
     colorIndex += STEPS;
   }
@@ -68,9 +68,9 @@ void strobe2() {
 #define MIN_BRIGHT 10
 
 void pulse2() {
-  int middle ;
-  static int startP ;
-  static int endP ;
+  uint8_t middle ;
+  static uint8_t startP ;
+  static uint8_t endP ;
   static uint8_t hue ;
   static int brightness = 0 ;
   static int bAdder = 1;
@@ -119,9 +119,9 @@ void pulse2() {
     sequenceEnd = false ;
 
     if ( flowDir ) {
-      endP = random8(30, 70);
+      endP = random8(30, NUM_LEDS);
     } else {
-      startP = random8(30, 70);
+      startP = random8(30, NUM_LEDS);
     }
   }
 
@@ -461,7 +461,7 @@ void twirlers(int numTwirlers, bool opposing ) {
 
 void heartbeat() {
 
-  const int *hbTable[] = {
+  const byte *hbTable[] = {
     25,
     61,
     105,
