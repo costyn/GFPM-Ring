@@ -70,6 +70,8 @@ void getYPRAccel() {
   if ( maxAccel > 6000 and inBeat == false ) {
     inBeat = true ;
     tapTempo.update(true);
+    fill_solid(leds, 1, CRGB::Red);
+    FastLED.show();
   } else if ( maxAccel < 6000 ) {
     inBeat = false ;
     tapTempo.update(false);
@@ -145,10 +147,3 @@ void printDebugging() {
 
 
 
-
-int freeRam ()
-{
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
-}

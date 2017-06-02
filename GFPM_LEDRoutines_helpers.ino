@@ -8,8 +8,8 @@ void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor 
     //    DEBUG_PRINTLN(F("GRMBL\t")) ;  // This should never happen
   } else {
     // Determine actual start and actual end (normalize using modulo):
-    int actualStart = (startLed + NUM_LEDS) % NUM_LEDS ;
-    int actualEnd = (endLed + NUM_LEDS) % NUM_LEDS ;
+    int actualStart = mod(startLed + NUM_LEDS, NUM_LEDS)  ;
+    int actualEnd = mod(endLed + NUM_LEDS, NUM_LEDS) ;
 
     // If beginning is at say 50, and end at 10, then we split the gradient in 2:
     // * one from 50-59
@@ -73,14 +73,14 @@ int lowestPoint() {
   } else {
     DEBUG_PRINT(F("\tWTF\t")) ;  // This should never happen
   }
-  targetLedPos = ( (targetLedPos + OFFSET) % NUM_LEDS ) ;
+  targetLedPos = mod(targetLedPos + OFFSET, NUM_LEDS) ;
 
   if ( currentLedPos != targetLedPos ) {
     bool goClockwise = true ;
 
     // http://stackoverflow.com/questions/7428718/algorithm-or-formula-for-the-shortest-direction-of-travel-between-two-degrees-on
 
-    if ((targetLedPos - currentLedPos + NUM_LEDS) % NUM_LEDS < NUM_LEDS / 2) {
+    if ( mod(targetLedPos - currentLedPos + NUM_LEDS,NUM_LEDS) < NUM_LEDS / 2) {   // custom modulo
       goClockwise = true ;
     } else {
       goClockwise = false  ;
@@ -164,5 +164,17 @@ void shortKeyPress() {
   }
 }
 
+// Custom mod which always returns a positive number
+int mod(int x, int m) {
+    return (x%m + m)%m;
+}
 
+
+// for debugging purposes
+int freeRam ()
+{
+  extern int __heap_start, *__brkval;
+  int v;
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
 

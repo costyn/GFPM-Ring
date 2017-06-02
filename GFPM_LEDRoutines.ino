@@ -1,18 +1,21 @@
 #define MAX_NEG_ACCEL -3000
 #define MAX_POS_ACCEL 3000
 
+
 void FillLEDsFromPaletteColors() {
   static uint8_t startIndex = 0;  // initialize at start
-  static byte flowDir = 1 ;
+  static int flowDir = 1 ;
 
   const CRGBPalette16 palettes[] = { RainbowColors_p, RainbowStripeColors_p, OceanColors_p, HeatColors_p, PartyColors_p, CloudColors_p, ForestColors_p } ;
 
+/*
   if ( isMpuUp() ) {
     flowDir = 1 ;
   } else if ( isMpuDown() ) {
     flowDir = -1 ;
   }
 
+*/
   startIndex += flowDir ;
 
   uint8_t colorIndex = startIndex ;
@@ -262,7 +265,7 @@ void pulse_static() {
 
 
 
-
+/*
 #define COOLING  55
 #define SPARKING 120
 #define FIRELEDS round( NUM_LEDS / 2 )
@@ -299,14 +302,14 @@ void Fire2012()
     leds[j] = color;
   }
 
-  /*  "Reverse" Mapping needed:
-      ledindex 44 = heat[0]
-      ledindex 43 = heat[1]
-      ledindex 42 = heat[2]
-      ...
-      ledindex 1 = heat[43]
-      ledindex 0 = heat[44]
-  */
+  //  "Reverse" Mapping needed:
+  //    ledindex 44 = heat[0]
+  //    ledindex 43 = heat[1]
+  //    ledindex 42 = heat[2]
+  //    ...
+  //    ledindex 1 = heat[43]
+  //    ledindex 0 = heat[44]
+  
   for ( int j = 0; j <= FIRELEDS; j++) {
     int ledIndex = FIRELEDS - j ;
     CRGB color = HeatColor( heat[j]);
@@ -315,6 +318,7 @@ void Fire2012()
 
   FastLED.show();
 }
+*/
 
 void racingLeds() {
   //  static long loopCounter = 0 ;
@@ -438,6 +442,7 @@ void gLed() {
   fadeall(200);
 }
 
+/*
 void gGradient() {
   const CHSV chsvBlue = CHSV( 160, 255, MAX_BRIGHT ) ;
   const CHSV chsvRed = CHSV( 0, 255, MAX_BRIGHT ) ;
@@ -448,6 +453,7 @@ void gGradient() {
   fillGradientRing( ledPos + 11, chsvRed , ledPos + 20, chsvBlue ) ;
   FastLED.show();
 }
+
 
 void gradientBounce() {
 
@@ -489,7 +495,7 @@ void vuMeter() {
     growing = ! growing ;
   }
 }
-
+*/
 
 
 void vuMeter2() {
@@ -661,29 +667,33 @@ void heartbeat() {
 }
 
 
-// Todo: 
+// Todo:
 // - sync to BPM
 // - spin faster and slower then turn around and spin faster and slower
 
 #define FL_LENGHT 20   // how many LEDs should be in the "stripe"
 #define FL_MIDPOINT FL_LENGHT / 2
+#define MAX_LOOP_SPEED 7
 
-void fastLoop() {
+void fastLoop(bool reverse) {
   static int startP = 0 ;  // start position
   static int hue = 0 ;
   fill_solid(leds, NUM_LEDS, CRGB::Black);
-  fillGradientRing(startP, CHSV(hue, 255, 0), startPos + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
+  fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
   fillGradientRing(startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
   FastLED.show();
-  startP++ ;
-  if( taskLedModeSelect.getRunCounter() % 2 ) == 0 ) {   // slow down the color change a bit
-    hue++ ;
+  if ( reverse ) {
+    startP += map( cos8(hue % 255), 0, 255, -MAX_LOOP_SPEED, MAX_LOOP_SPEED + 1) ; // abuse the 'hue' counter
+  } else {
+    startP++ ;
   }
+  hue++ ;
 }
 
 
+
 // FastLED library NoisePlusPalette routine rewritten for 1 dimensional LED strip
-// - speed determines how fast time moves forward.  Try  1 for a very slow moving effect, 
+// - speed determines how fast time moves forward.  Try  1 for a very slow moving effect,
 // or 60 for something that ends up looking like water.
 
 // - Scale determines how far apart the pixels in our noise array are.  Try
@@ -696,7 +706,7 @@ void fastLoop() {
 void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean colorLoop ) {
   static uint8_t noise[NUM_LEDS];
 
-  const CRGBPalette16 palettes[] = { RainbowColors_p, RainbowStripeColors_p, OceanColors_p, HeatColors_p, LavaColors_p, PartyColors_p, CloudColors_p, ForestColors_p } ;
+  const CRGBPalette16 palettes[] = { LavaColors_p, PartyColors_p } ;
 
   static uint16_t x = random16();
   static uint16_t y = random16();
@@ -706,7 +716,7 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
   // from frame-to-frame.  In order to reduce this, we can do some fast data-smoothing.
   // The amount of data smoothing we're doing depends on "speed".
   uint8_t dataSmoothing = 0;
-  
+
   if ( speed < 50) {
     dataSmoothing = 200 - (speed * 4);
   }
@@ -765,7 +775,7 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
     leds[i] = color;
   }
   ihue += 1;
-  
+
   FastLED.show();
 }
 
@@ -784,7 +794,9 @@ void pendulum() {
   fillGradientRing(sPos2, CHSV(hue + 128, 255, 0), sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT));
   fillGradientRing(sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT), sPos2 + 20, CHSV(hue + 128, 255, 0));
   FastLED.show();
-  counter += 6 ;  // increase for faster swinging. 
+  counter += 6 ;  // increase for faster swinging.
 }
+
+
 
 

@@ -34,7 +34,7 @@
 #define CHIPSET     WS2812B
 #define LED_PIN     12   // which pin your Neopixels are connected to
 #define NUM_LEDS    60   // how many LEDs you have
-#define MAX_BRIGHT  100  // 0-255, higher number is brighter. 
+#define MAX_BRIGHT  150  // 0-255, higher number is brighter. 
 #define SATURATION  255   // 0-255, 0 is pure white, 255 is fully saturated color
 #define STEPS       2   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
@@ -44,7 +44,7 @@
 #define LEDMODE_SELECT_DEFAULT_INTERVAL 50 // default scheduling time for LEDMODESELECT
 #define PALETTE_SPEED  15                 // Default How fast the palette colors move.   Higher delay = slower movement.
 #define FIRE_SPEED  85                    // Default Fire Speed; delay in millseconds. Higher delay = slower movement.
-#define CYLON_SPEED 15                    // Default Cylon Speed; delay in millseconds. Higher delay = slower movement.
+#define CYLON_SPEED 13                    // Default Cylon Speed; delay in millseconds. Higher delay = slower movement.
 #define FADEGLITTER_SPEED 10              // Default delay in millseconds. Higher delay = slower movement.
 #define DISCOGLITTER_SPEED 20             // Default delay in millseconds. Higher delay = slower movement.
 
@@ -57,7 +57,7 @@ CRGB leds[NUM_LEDS];
 unsigned long lastButtonChange = 0; // button debounce timer.
 
 
-byte ledMode = 21 ; // Which mode do we start with
+byte ledMode = 5 ; // Which mode do we start with
 
 const char *routines[] = {
   "rb",         // 0
@@ -76,8 +76,8 @@ const char *routines[] = {
   "twirl6o",    // 13
   "fglitter",   // 14
   "dglitter",   // 15
-  "pulse2",     // 16
-  "pulsestatic",// 17
+  //  "pulse2",     // 16
+  //  "pulsestatic",// 17
   "racers",     // 18
   "wave",       // 19
   "shakeit",    // 20
@@ -85,9 +85,12 @@ const char *routines[] = {
   "strobe2",    // 22
   "gled",       // 23
   "heartbeat",  // 24
-  "ggradient",  // 25
+  //  "vumeter",    // 25
   "fastloop",   // 26
-  "black"       // 27
+  "fastloop2",  // 27
+  //  "noise_party",// 28
+  "noise_lava", // 29
+  "black"       // 30
 };
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
 
@@ -235,8 +238,8 @@ void setup() {
   //  taskPrintDebugging.enable() ;
 #endif
 
-  tapTempo.setMaxBPM( 160 ) ;
-  tapTempo.setMinBPM( 110 ) ;
+  tapTempo.setMaxBPM( 180 ) ;
+  tapTempo.setMinBPM( 90 ) ;
 
 }
 
@@ -272,55 +275,54 @@ void ledModeSelect() {
     FillLEDsFromPaletteColors() ;
     taskLedModeSelect.setInterval( PALETTE_SPEED ) ;
     taskGetDMPData.enableIfNot() ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.enableIfNot() ;
-#endif
-    // Uses setBrightness
-
 
   } else if ( ledMode >= 7 and ledMode <= 13 ) {
     if ( ledMode == 7 ) {
       twirlers( 1, false ) ;
+      taskLedModeSelect.setInterval( 7 ) ;
     }
     if ( ledMode == 8 ) {
       twirlers( 2, false ) ;
+      taskLedModeSelect.setInterval( 8 ) ;
     }
     if ( ledMode == 9 ) {
       twirlers( 4, false ) ;
+      taskLedModeSelect.setInterval( 9 ) ;
     }
     if ( ledMode == 10 ) {
       twirlers( 6, false ) ;
+      taskLedModeSelect.setInterval( 12 ) ;
     }
     if ( ledMode == 11 ) {
       twirlers( 2, true ) ;
+      taskLedModeSelect.setInterval( 8 ) ;
     }
     if ( ledMode == 12 ) {
       twirlers( 4, true ) ;
+      taskLedModeSelect.setInterval( 9 ) ;
     }
     if ( ledMode == 13 ) {
       twirlers( 6, true ) ;
+      taskLedModeSelect.setInterval( 11 ) ;
     }
 
-    taskLedModeSelect.setInterval( CYLON_SPEED ) ;
-    taskGetDMPData.enableIfNot() ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.enableIfNot() ;
-#endif
+    //    taskLedModeSelect.setInterval( 10 ) ;
+    taskGetDMPData.disable() ;
 
-
-    // FastLED Fire2012 split down the middle, so the fire flows "down" from the neck of the scarf to the ends
-  } else if ( strcmp(routines[ledMode], "fire2012") == 0 ) {
-    Fire2012() ;
-    FastLED.setBrightness( MAX_BRIGHT ) ;
-    //    taskLedModeSelect.setInterval( FIRE_SPEED ) ;
-#define FIRE_MAX_SPEED 15  // lower value for faster
-#define FIRE_MIN_SPEED 100
-    taskLedModeSelect.setInterval( map( yprZ, 0, 90, FIRE_MIN_SPEED, FIRE_MAX_SPEED )) ;
-    taskGetDMPData.enableIfNot() ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.enableIfNot() ;
-#endif
-
+    /*
+        // FastLED Fire2012 split down the middle, so the fire flows "down" from the neck of the scarf to the ends
+      } else if ( strcmp(routines[ledMode], "fire2012") == 0 ) {
+        Fire2012() ;
+        FastLED.setBrightness( MAX_BRIGHT ) ;
+        //    taskLedModeSelect.setInterval( FIRE_SPEED ) ;
+      #define FIRE_MAX_SPEED 15  // lower value for faster
+      #define FIRE_MIN_SPEED 100
+        taskLedModeSelect.setInterval( map( yprZ, 0, 90, FIRE_MIN_SPEED, FIRE_MAX_SPEED )) ;
+        taskGetDMPData.enableIfNot() ;
+      #ifdef WHITESTRIPE
+        taskWhiteStripe.enableIfNot() ;
+      #endif
+    */
 
     // Fade glitter
   } else if ( strcmp(routines[ledMode], "fglitter") == 0 ) {
@@ -420,19 +422,38 @@ void ledModeSelect() {
     taskWhiteStripe.disable() ;
 #endif
 
-  } else if ( strcmp(routines[ledMode], "ggradient") == 0 ) {
-    vuMeter() ;
-    taskLedModeSelect.setInterval( 8 ) ;
-    taskGetDMPData.disable() ;
-#ifdef WHITESTRIPE
-    taskWhiteStripe.disable() ;
-#endif
-
+    /*
+      } else if ( strcmp(routines[ledMode], "vumeter") == 0 ) {
+        vuMeter() ;
+        taskLedModeSelect.setInterval( 8 ) ;
+        taskGetDMPData.disable() ;
+      #ifdef WHITESTRIPE
+        taskWhiteStripe.disable() ;
+      #endif
+    */
 
   } else if ( strcmp(routines[ledMode], "fastloop") == 0 ) {
-    fastLoop() ;
+    fastLoop( false ) ;
     taskLedModeSelect.setInterval( 5 ) ;
     taskGetDMPData.disable() ;
+
+  } else if ( strcmp(routines[ledMode], "fastloop2") == 0 ) {
+    fastLoop( true ) ;
+    taskLedModeSelect.setInterval( 10 ) ;
+    taskGetDMPData.disable() ;
+
+
+  } else if ( strcmp(routines[ledMode], "noise_lava") == 0 ) {
+    fillnoise8( 0, 20, 30, 1); // pallette, speed, scale, loop
+    taskLedModeSelect.setInterval( 10 ) ;
+    taskGetDMPData.disable() ;
+    /*
+      } else if ( strcmp(routines[ledMode], "noise_party") == 0 ) {
+        fillnoise8( 1, 20, 30, 1); // pallette, speed, scale, loop
+        taskLedModeSelect.setInterval( 10 ) ;
+        taskGetDMPData.disable() ;
+    */
   }
+
 }
 
