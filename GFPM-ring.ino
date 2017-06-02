@@ -34,7 +34,7 @@
 #define CHIPSET     WS2812B
 #define LED_PIN     12   // which pin your Neopixels are connected to
 #define NUM_LEDS    60   // how many LEDs you have
-#define MAX_BRIGHT  150  // 0-255, higher number is brighter. 
+#define MAX_BRIGHT  100  // 0-255, higher number is brighter. 
 #define SATURATION  255   // 0-255, 0 is pure white, 255 is fully saturated color
 #define STEPS       2   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
@@ -86,7 +86,8 @@ const char *routines[] = {
   "gled",       // 23
   "heartbeat",  // 24
   "ggradient",  // 25
-  "black"       // 26
+  "fastloop",   // 26
+  "black"       // 27
 };
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
 
@@ -427,6 +428,11 @@ void ledModeSelect() {
     taskWhiteStripe.disable() ;
 #endif
 
+
+  } else if ( strcmp(routines[ledMode], "fastloop") == 0 ) {
+    fastLoop() ;
+    taskLedModeSelect.setInterval( 5 ) ;
+    taskGetDMPData.disable() ;
   }
 }
 

@@ -2,12 +2,11 @@
 // startLed and endLed may be negative (one or both), may be larger than NUM_LEDS (one or both)
 // startLed cannot (yet) be > endLed
 
-void fillGradientRing( int startLed, CRGB startColor, int endLed, CRGB endColor ) {
+void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor ) {
   if ( startLed > endLed ) {
-    fill_gradient_RGB(leds, endLed, CRGB::Red, startLed, CRGB::Red); // show RED for error!
-    DEBUG_PRINTLN(F("GRMBL\t")) ;  // This should never happen
+    fill_gradient(leds, endLed, CHSV(0, 255, 255) , startLed, CHSV(0, 255, 255), SHORTEST_HUES ); // show RED for error!
+    //    DEBUG_PRINTLN(F("GRMBL\t")) ;  // This should never happen
   } else {
-
     // Determine actual start and actual end (normalize using modulo):
     int actualStart = (startLed + NUM_LEDS) % NUM_LEDS ;
     int actualEnd = (endLed + NUM_LEDS) % NUM_LEDS ;
@@ -17,17 +16,25 @@ void fillGradientRing( int startLed, CRGB startColor, int endLed, CRGB endColor 
     // * one from 0-10
     // To determine which color should be at 59 and 0 we use the blend function:
     if ( actualStart > actualEnd ) {
-      int ratio = round( (1 - (actualEnd / (endLed - startLed))) * 255 ) ; // determine what ratio of startColor and endColor we need at LED 0
-      CRGB colorAtLEDZero = blend(startColor, endColor, ratio);
+      float ratio = 1.0 - float(actualEnd) / float(endLed - startLed) ; // cast to float otherwise the division won't work
+      int normalizedRatio = round( ratio * 255 ) ; // determine what ratio of startColor and endColor we need at LED 0
+      CHSV colorAtLEDZero = blend(startColor, endColor, normalizedRatio);
 
-      fill_gradient_RGB(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero, SHORTEST_HUES);
-      fill_gradient_RGB(leds, 0, colorAtLEDZero, actualEnd, endColor, SHORTEST_HUES);
+      fill_gradient(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero, SHORTEST_HUES);
+      fill_gradient(leds, 0, colorAtLEDZero, actualEnd, endColor, SHORTEST_HUES);
+      /*
+            Serial.print(F("\t"));
+            Serial.print(endLed - startLed) ;
+            Serial.print(F("\t"));
+            Serial.print(ratio) ;
+            Serial.print(F("\t"));
+            Serial.print(normRatio) ;
+      */
     } else {
-      fill_gradient_RGB(leds, actualStart, startColor, actualEnd, endColor, SHORTEST_HUES);
+      fill_gradient(leds, actualStart, startColor, actualEnd, endColor, SHORTEST_HUES);
     }
   }
 }
-
 #define OFFSET 8   // offset for aligning gyro "bottom" with LED "bottom"
 
 int lowestPoint() {
