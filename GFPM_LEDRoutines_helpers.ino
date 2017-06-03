@@ -35,8 +35,13 @@ void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor 
     }
   }
 }
-#define OFFSET 8   // offset for aligning gyro "bottom" with LED "bottom"
 
+
+
+#define OFFSET 8   // offset for aligning gyro "bottom" with LED "bottom" - depends on orientation of ring led 0 vs gyro - determine experimentally
+
+// This routine needs pitch/roll information in floats, so we need to retrieve it separately
+//  Suggestions how to fix this/clean it up welcome.
 int lowestPoint() {
   Quaternion quat;        // [w, x, y, z]         quaternion container
   VectorFloat gravity;    // [x, y, z]            gravity vector
@@ -80,7 +85,7 @@ int lowestPoint() {
 
     // http://stackoverflow.com/questions/7428718/algorithm-or-formula-for-the-shortest-direction-of-travel-between-two-degrees-on
 
-    if ( mod(targetLedPos - currentLedPos + NUM_LEDS,NUM_LEDS) < NUM_LEDS / 2) {   // custom modulo
+    if ( mod(targetLedPos - currentLedPos + NUM_LEDS, NUM_LEDS) < NUM_LEDS / 2) {  // custom modulo
       goClockwise = true ;
     } else {
       goClockwise = false  ;
@@ -144,29 +149,53 @@ void addGlitter( fract8 chanceOfGlitter)
 }
 
 
+#define LONG_PRESS_MIN_TIME 500  // minimum time for a long press
+#define SHORT_PRESS_MIN_TIME 100   // minimum time for a short press - debounce
 
-// interrupt triggered button press with a very simple debounce (discard multiple button presses < 300ms)
-void shortKeyPress() {
-  if ( millis() - lastButtonChange > 300 ) {
-    ledMode++;
-    DEBUG_PRINT(F("ledMode = ")) ;
-    DEBUG_PRINT( routines[ledMode] ) ;
-    DEBUG_PRINT(F(" mode ")) ;
-    DEBUG_PRINTLN( ledMode ) ;
+void checkButtonPress() {
+  static unsigned long buttonTimer = 0;
+  static boolean buttonActive = false;
 
-    if (ledMode >= NUMROUTINES ) {
-      ledMode = 0;
+  if (digitalRead(BUTTON_PIN) == LOW) {
+    // Start the timer
+    if (buttonActive == false) {
+      buttonActive = true;
+      buttonTimer = millis();
     }
 
-    lastButtonChange = millis() ;
+    // If timer has passed longPressTime, set longPressActive to true
+    if ((millis() - buttonTimer > LONG_PRESS_MIN_TIME) && (longPressActive == false)) {
+      longPressActive = true;
+    }
+
   } else {
-    //    DEBUG_PRINTLN(F("Too short an interval") ) ;
+    // Reset when button is no longer pressed
+    if (buttonActive == true) {
+      buttonActive = false;
+      if (longPressActive == true) {
+        longPressActive = false;
+      } else {
+        if ( millis() - buttonTimer > SHORT_PRESS_MIN_TIME ) {
+          ledMode++;
+          DEBUG_PRINT(F("ledMode = ")) ;
+          DEBUG_PRINT( routines[ledMode] ) ;
+          DEBUG_PRINT(F(" mode ")) ;
+          DEBUG_PRINTLN( ledMode ) ;
+
+          if (ledMode >= NUMROUTINES ) {
+            ledMode = 0;
+          }
+
+          FastLED.setBrightness( MAX_BRIGHT ) ; // reset it to 'default'  
+        }
+      }
+    }
   }
 }
 
 // Custom mod which always returns a positive number
 int mod(int x, int m) {
-    return (x%m + m)%m;
+  return (x % m + m) % m;
 }
 
 
@@ -178,3 +207,30 @@ int freeRam ()
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+// Calculates difference between now and last time it was called 
+// and adjusts the interval of taskLedModeSelect accordingly
+void syncToBPM() {
+  static unsigned long lastTimeStamp = 0 ;
+  unsigned long currentTimeStamp = millis() ;
+  /*
+  DEBUG_PRINT( tapTempo.getBPM() ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( tapTempo.getBeatLength() ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( tapTempo.beatProgress() ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
+*/
+  // converges quicker - not ideal, it causes it's own fluctuation
+  int syncFactor = ( currentTimeStamp - lastTimeStamp - tapTempo.getBeatLength() ) * 10 ;
+
+  if ( currentTimeStamp - lastTimeStamp != tapTempo.getBeatLength() ) { // we're outta sync, try harder
+    taskLedModeSelect.setInterval( taskLedModeSelect.getInterval() - syncFactor ) ;
+  } else {
+    DEBUG_PRINT( F("\tsync") ) ;
+  }
+  DEBUG_PRINTLN() ;
+  lastTimeStamp = millis() ;
+}

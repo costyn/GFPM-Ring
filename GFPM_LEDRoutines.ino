@@ -1,32 +1,31 @@
-#define MAX_NEG_ACCEL -3000
-#define MAX_POS_ACCEL 3000
-
+#define P_MAX_POS_ACCEL 3000
 
 void FillLEDsFromPaletteColors() {
-  static uint8_t startIndex = 0;  // initialize at start
-  static int flowDir = 1 ;
+  static uint8_t startIndex = 15;  // initialize at start
+//  static int flowDir = 1 ;
 
-  const CRGBPalette16 palettes[] = { RainbowColors_p, RainbowStripeColors_p, OceanColors_p, HeatColors_p, PartyColors_p, CloudColors_p, ForestColors_p } ;
+  //  const CRGBPalette16 palettes[] = { RainbowColors_p, RainbowStripeColors_p, OceanColors_p, HeatColors_p, PartyColors_p, CloudColors_p, ForestColors_p } ;
+  const CRGBPalette16 palettes[] = { RainbowColors_p, OceanColors_p, HeatColors_p, PartyColors_p } ;
 
-/*
-  if ( isMpuUp() ) {
-    flowDir = 1 ;
-  } else if ( isMpuDown() ) {
-    flowDir = -1 ;
-  }
+  /*
+    if ( isMpuUp() ) {
+      flowDir = 1 ;
+    } else if ( isMpuDown() ) {
+      flowDir = -1 ;
+    }
 
-*/
-  startIndex += flowDir ;
+  */
+  startIndex += 1 ;
 
   uint8_t colorIndex = startIndex ;
 
   for ( uint8_t i = 0; i < NUM_LEDS; i++) {
-    leds[i] = ColorFromPalette( palettes[ledMode], colorIndex, MAX_BRIGHT, NOBLEND );
+    leds[i] = ColorFromPalette( palettes[ledMode], colorIndex, MAX_BRIGHT, LINEARBLEND );
     colorIndex += STEPS;
   }
   addGlitter(80);
 
-  FastLED.setBrightness( map( constrain(aaRealZ, 0, MAX_POS_ACCEL), 0, MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
+  FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
 
   FastLED.show();
 }
@@ -61,6 +60,8 @@ void discoGlitter() {
 void strobe1() {
   if ( tapTempo.beatProgress() > 0.95 ) {
     fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT)); // yaw for color
+  } else if ( tapTempo.beatProgress() > 0.80 and tapTempo.beatProgress() < 0.85 ) {
+    fill_solid(leds, NUM_LEDS, CHSV( 0, 0, MAX_BRIGHT)); // yaw for color
   } else {
     fill_solid(leds, NUM_LEDS, CRGB::Black); // yaw for color
   }
@@ -86,7 +87,7 @@ void strobe2() {
    if brightness < MAX_BRIGHT then fadeup = true
 */
 
-
+/*
 #define MIN_BRIGHT 10
 
 void pulse2() {
@@ -129,7 +130,7 @@ void pulse2() {
     }
 
     fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
+    fillGradientRing(middle + 1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
 
   } else {
 
@@ -185,7 +186,7 @@ void pulse3() {
     }
 
     fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
+    fillGradientRing(middle +1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
 
   } else {
 
@@ -243,7 +244,7 @@ void pulse_static() {
 
     fill_solid(leds, NUM_LEDS, CRGB::Black);
     fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
+    fillGradientRing(middle+1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
 
     //    fill_gradient(leds, startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness), SHORTEST_HUES);
     //    fill_gradient(leds, middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0), SHORTEST_HUES);
@@ -263,19 +264,19 @@ void pulse_static() {
   }
 }
 
-
+*/
 
 /*
-#define COOLING  55
-#define SPARKING 120
-#define FIRELEDS round( NUM_LEDS / 2 )
+  #define COOLING  55
+  #define SPARKING 120
+  #define FIRELEDS round( NUM_LEDS / 2 )
 
-// Adapted Fire2012. This version starts in the middle and mirrors the fire going down to both ends.
-// Works well with the Adafruit glow fur scarf.
-// FIRELEDS defines the position of the middle LED.
+  // Adapted Fire2012. This version starts in the middle and mirrors the fire going down to both ends.
+  // Works well with the Adafruit glow fur scarf.
+  // FIRELEDS defines the position of the middle LED.
 
-void Fire2012()
-{
+  void Fire2012()
+  {
   // Array of temperature readings at each simulation cell
   static byte heat[FIRELEDS];
 
@@ -309,7 +310,7 @@ void Fire2012()
   //    ...
   //    ledindex 1 = heat[43]
   //    ledindex 0 = heat[44]
-  
+
   for ( int j = 0; j <= FIRELEDS; j++) {
     int ledIndex = FIRELEDS - j ;
     CRGB color = HeatColor( heat[j]);
@@ -317,7 +318,7 @@ void Fire2012()
   }
 
   FastLED.show();
-}
+  }
 */
 
 void racingLeds() {
@@ -331,7 +332,7 @@ void racingLeds() {
 
   fill_solid(leds, NUM_LEDS, CRGB::Black);    // Start with black slate
 
-  for ( int i = 0; i < NUMRACERS ; i++ ) {
+  for ( uint8_t i = 0; i < NUMRACERS ; i++ ) {
     leds[racer[i]] = racerColor[i]; // Assign color
 
     // If taskLedModeSelect.getRunCounter() is evenly divisible by 'speed' then check if we've reached the end (if so, reverse), and do a step
@@ -359,13 +360,13 @@ void racingLeds() {
   FastLED.show();
 }
 
-#define MAX_NEG_ACCEL -5000
-#define MAX_POS_ACCEL 5000
+#define WAVE_MAX_NEG_ACCEL -5000
+#define WAVE_MAX_POS_ACCEL 5000
 #define MIN_BRIGHT 20
 
 void waveYourArms() {
   // Use yaw for color; use accelZ for brightness
-  fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ) , 255, map( constrain(aaRealZ, MAX_NEG_ACCEL, MAX_POS_ACCEL), MAX_NEG_ACCEL, MAX_POS_ACCEL, MIN_BRIGHT, MAX_BRIGHT )) );
+  fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ) , 255, map( constrain(aaRealZ, WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL), WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL, MIN_BRIGHT, MAX_BRIGHT )) );
   FastLED.show();
 }
 
@@ -431,37 +432,28 @@ void whiteStripe() {
 }
 #endif
 
-
-// This routine needs pitch/roll information in floats, so we need to retrieve it separately
-//  Suggestions how to fix this/clean it up welcome.
-
-
-void gLed() {
+/*
+void gLedOrig() {
   leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
   FastLED.show();
   fadeall(200);
 }
+*/
+
+#define GLED_WIDTH 3
+void gLed() {
+  uint8_t ledPos = lowestPoint() ;
+  static uint8_t hue = 0 ;
+//  fill_solid(leds, NUM_LEDS, CRGB::Black );
+  fillGradientRing( ledPos, CHSV(hue, 255, 0) , ledPos + GLED_WIDTH , CHSV(hue, 255, 255) ) ;
+  fillGradientRing( ledPos + GLED_WIDTH + 1, CHSV(hue, 255, 255), ledPos + GLED_WIDTH + GLED_WIDTH, CHSV(hue, 255, 0) ) ;
+  FastLED.show();
+  fadeall(250);
+  hue++ ;
+}
 
 /*
-void gGradient() {
-  const CHSV chsvBlue = CHSV( 160, 255, MAX_BRIGHT ) ;
-  const CHSV chsvRed = CHSV( 0, 255, MAX_BRIGHT ) ;
-  //  int ledPos = lowestPoint() ;
-  int ledPos = 20 ;
-  fill_solid(leds, NUM_LEDS, CRGB::Black );
-  fillGradientRing( ledPos, chsvBlue , ledPos + 10, chsvRed  ) ;
-  fillGradientRing( ledPos + 11, chsvRed , ledPos + 20, chsvBlue ) ;
-  FastLED.show();
-}
-
-
-void gradientBounce() {
-
-
-
-}
-
-void vuMeter() {
+  void vuMeter() {
   static int vuLength = 1 ;
   static bool growing = true ;
 
@@ -494,7 +486,7 @@ void vuMeter() {
   if ( vuLength >= (NUM_LEDS / 2)  or vuLength <= 0 ) {
     growing = ! growing ;
   }
-}
+  }
 */
 
 
@@ -565,9 +557,13 @@ void twirlers(int numTwirlers, bool opposing ) {
         leds[pos] = clockwiseColor ;
       }
 
+      if ( pos == 0 ) { // We want LED 0 to be hit at every beat for the "even" LEDs
+        syncToBPM() ;
+      }
+
     } else {
       if ( opposing ) {
-        int antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ;
+        int antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ; // normalized backwards counter
         pos = (antiClockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
       } else {
         pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
@@ -578,14 +574,16 @@ void twirlers(int numTwirlers, bool opposing ) {
         leds[pos] = antiClockwiseColor ;
       }
     }
-  }
 
+  }
   FastLED.show();
 }
 
+
+
 // Todo: sync to BPM
 void heartbeat() {
-  const byte *hbTable[] = {
+  const uint8_t hbTable[] = {
     25,
     61,
     105,
@@ -660,6 +658,7 @@ void heartbeat() {
   FastLED.setBrightness( hbTable[arrayIndex] );
   if ( hbTable[arrayIndex] == 0 ) {
     arrayIndex = 0 ;
+    syncToBPM() ;  // sync to BPM
   } else {
     arrayIndex++ ;
   }
@@ -667,27 +666,27 @@ void heartbeat() {
 }
 
 
-// Todo:
-// - sync to BPM
-// - spin faster and slower then turn around and spin faster and slower
-
 #define FL_LENGHT 20   // how many LEDs should be in the "stripe"
 #define FL_MIDPOINT FL_LENGHT / 2
-#define MAX_LOOP_SPEED 7
+#define MAX_LOOP_SPEED 5
 
 void fastLoop(bool reverse) {
   static int startP = 0 ;  // start position
   static int hue = 0 ;
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
-  fillGradientRing(startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
+  fillGradientRing(startP + FL_MIDPOINT + 1, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
   FastLED.show();
   if ( reverse ) {
     startP += map( cos8(hue % 255), 0, 255, -MAX_LOOP_SPEED, MAX_LOOP_SPEED + 1) ; // abuse the 'hue' counter
   } else {
     startP++ ;
+    if ( startP == 0 ) {
+      syncToBPM() ;  // only sync to BPM on forward loop
+    }
   }
   hue++ ;
+
 }
 
 
@@ -781,20 +780,22 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
 
 
 
-// Todo: sync to BPM
-
 void pendulum() {
   static int counter = 0 ;
-  int hue = map( yprX, 0, 360, 0, 255 ) ; // yaw for color
-  int sPos1 = map( cubicwave8(counter), 0, 255, 0, 30) ;
-  int sPos2 = map( cubicwave8(counter), 0, 255, 30, 60 ) ;
+  static int hue = map( yprX, 0, 360, 0, 255 ) ; // yaw for color
+  static int sPos1 = map( cubicwave8(counter), 0, 255, 0, 30) ;
+  static int sPos2 = map( cubicwave8(counter), 0, 255, 30, 60 ) ;
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   fillGradientRing(sPos1, CHSV(hue, 255, 0), sPos1 + 10, CHSV(hue, 255, MAX_BRIGHT));
-  fillGradientRing(sPos1 + 10, CHSV(hue, 255, MAX_BRIGHT), sPos1 + 20, CHSV(hue, 255, 0));
+  fillGradientRing(sPos1 + 11, CHSV(hue, 255, MAX_BRIGHT), sPos1 + 20, CHSV(hue, 255, 0));
   fillGradientRing(sPos2, CHSV(hue + 128, 255, 0), sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT));
-  fillGradientRing(sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT), sPos2 + 20, CHSV(hue + 128, 255, 0));
+  fillGradientRing(sPos2 + 11, CHSV(hue + 128, 255, MAX_BRIGHT), sPos2 + 20, CHSV(hue + 128, 255, 0));
   FastLED.show();
   counter += 6 ;  // increase for faster swinging.
+//  if ( sPos1 == 0 ) {
+//    syncToBPM() ;  // sync to BPM 
+//  }
+
 }
 
 

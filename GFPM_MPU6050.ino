@@ -34,6 +34,8 @@ void getDMPData() {
     mpu.getFIFOBytes(fifoBuffer, packetSize);
     fifoCount -= packetSize;
   }
+
+  getYPRAccel() ;
 }
 
 
@@ -69,30 +71,25 @@ void getYPRAccel() {
 
   if ( maxAccel > 6000 and inBeat == false ) {
     inBeat = true ;
-    tapTempo.update(true);
-    fill_solid(leds, 1, CRGB::Red);
-    FastLED.show();
+    if ( longPressActive ) {   // only count BPM when button is held down
+      tapTempo.update(true);
+      fill_solid(leds, 1, CRGB::Red);
+      FastLED.show();
+    }
   } else if ( maxAccel < 6000 ) {
     inBeat = false ;
     tapTempo.update(false);
   }
-
-}
-
-
-
-bool isShaking() {
-  return activityLevel() > 6000 ;
 }
 
 
 
 #define POWER 256
 int activityLevel() {
-  static int value ;
-  const int alpha = 178;
-  int measurement = round( (abs( aaRealX)  + abs( aaRealY)  + abs( aaRealZ )) / 3 );
-  value = (alpha * measurement + (POWER - alpha) * value ) / POWER; //
+  //  static int value ;
+  //  const int alpha = 178;
+  //  int measurement = round( (abs( aaRealX)  + abs( aaRealY)  + abs( aaRealZ )) / 3 );
+  // value = (alpha * measurement + (POWER - alpha) * value ) / POWER; //
   //  return value ;
   return round( (abs( aaRealX )  + abs( aaRealY )  + abs( aaRealZ )) / 3 );
 }
