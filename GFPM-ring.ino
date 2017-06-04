@@ -4,11 +4,9 @@
    By: Costyn van Dongen
 
    Future ideas:
-   - choose 1 color, brightenall to max, then fade to min
-   - heartbeat pulse
    - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I
-   - two "faders" moving back and forth
-   - level meter moving back and forth
+
+   Note: MAX LEDS: 255 (due to use of uint8_t in for loops)
 */
 
 #define _TASK_MICRO_RES
@@ -169,6 +167,8 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   //  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), shortKeyPress, RISING);
 
+  set_max_power_in_volts_and_milliamps(5, 1500);
+
 #ifdef DEBUG
   Serial.begin(115200) ;
   DEBUG_PRINT( F("Starting up. Numroutines = ")) ;
@@ -250,7 +250,9 @@ void setup() {
   //  tapTempo.setMaxBPM( 180 ) ;
   //  tapTempo.setMinBPM( 90 ) ;
 
-}
+
+
+}  // end setup()
 
 
 
@@ -283,36 +285,29 @@ void ledModeSelect() {
     FillLEDsFromPaletteColors() ;
     taskLedModeSelect.setInterval( PALETTE_SPEED * 1000 ) ;
     taskGetDMPData.enableIfNot() ;
-/*
+
   } else if ( strcmp(routines[ledMode], "twirl1") == 0 ) {
     twirlers( 1, false ) ;
-    
     taskGetDMPData.enableIfNot() ;
 
   } else if ( strcmp(routines[ledMode], "twirl2") == 0 ) {
     twirlers( 2, false ) ;
-    //    taskLedModeSelect.setInterval( 8 * 1000) ;
 
   } else if ( strcmp(routines[ledMode], "twirl4") == 0 ) {
     twirlers( 4, false ) ;
-    //taskLedModeSelect.setInterval( 9 * 1000 ) ;
 
   } else if ( strcmp(routines[ledMode], "twirl6") == 0 ) {
     twirlers( 6, false ) ;
-    //    taskLedModeSelect.setInterval( 12 * 1000) ;
 
   } else if ( strcmp(routines[ledMode], "twirl2o") == 0 ) {
     twirlers( 2, true ) ;
-    //    taskLedModeSelect.setInterval( 8 * 1000) ;
 
   } else if ( strcmp(routines[ledMode], "twirl4o") == 0 ) {
     twirlers( 4, true ) ;
-    //    taskLedModeSelect.setInterval( 9 * 1000) ;
 
   } else if ( strcmp(routines[ledMode], "twirl6o") == 0 ) {
     twirlers( 6, true ) ;
-    //    taskLedModeSelect.setInterval( 11 * 1000) ;
-*/
+
     /*
         // FastLED Fire2012 split down the middle, so the fire flows "down" from the neck of the scarf to the ends
       } else if ( strcmp(routines[ledMode], "fire2012") == 0 ) {
@@ -412,7 +407,7 @@ void ledModeSelect() {
 
   } else if ( strcmp(routines[ledMode], "fastloop") == 0 ) {
     fastLoop( false ) ;
-//    taskLedModeSelect.setInterval( 5 * 1000) ;
+    //    taskLedModeSelect.setInterval( 5 * 1000) ;
     taskGetDMPData.enableIfNot() ;
 
   } else if ( strcmp(routines[ledMode], "fastloop2") == 0 ) {

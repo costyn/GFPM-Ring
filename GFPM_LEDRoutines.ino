@@ -35,7 +35,7 @@ void FillLEDsFromPaletteColors() {
   // Not used anywhere, but feel free to replace addGlitter with addColorGlitter in FillLEDsFromPaletteColors() above
   void addColorGlitter( fract8 chanceOfGlitter)
   {
-  for ( int i = 0 ; i < 4 ; i++ ) {
+  for ( uint8_t i = 0 ; i < 4 ; i++ ) {
     if ( random8() < chanceOfGlitter) {
       leds[ random16(NUM_LEDS) ] = CHSV( random8(), 255, MAX_BRIGHT);
     }
@@ -281,7 +281,7 @@ void pulse_static() {
   static byte heat[FIRELEDS];
 
   // Step 1.  Cool down every cell a little
-  for ( int i = 0; i < FIRELEDS; i++) {
+  for ( uint8_t i = 0; i < FIRELEDS; i++) {
     heat[i] = qsub8( heat[i],  random8(0, ((COOLING * 10) / FIRELEDS) + 2));
   }
 
@@ -383,7 +383,7 @@ void shakeIt() {
     //    leds[] = leds[NUM_LEDS - 1] ;  // uncomment for circular motion
   }
 
-  for (int i = NUM_LEDS - 2; i >= 0 ; i--) {
+  for (uint8_t i = NUM_LEDS - 2; i >= 0 ; i--) {
     leds[i + 1] = leds[i];
   }
 
@@ -402,7 +402,7 @@ void whiteStripe() {
   }
 
   if ( startLed == 0 ) {
-    for (int i = 0; i < STRIPE_LENGTH ; i++ ) {
+    for (uint8_t i = 0; i < STRIPE_LENGTH ; i++ ) {
       patternCopy[i] = leds[i];
     }
   }
@@ -410,7 +410,7 @@ void whiteStripe() {
   // 36 40   44 48 52 56   60
 
   leds[startLed] = patternCopy[0] ;
-  for (int i = 0; i < STRIPE_LENGTH - 2; i++ ) {
+  for (uint8_t i = 0; i < STRIPE_LENGTH - 2; i++ ) {
     patternCopy[i] = patternCopy[i + 1] ;
   }
   patternCopy[STRIPE_LENGTH - 1] = leds[startLed + STRIPE_LENGTH] ;
@@ -420,7 +420,7 @@ void whiteStripe() {
   startLed++ ;
 
   if ( startLed + STRIPE_LENGTH == NUM_LEDS - 1) { // LED nr 90 is index 89
-    for (int i = startLed; i < startLed + STRIPE_LENGTH; i++ ) {
+    for (uint8_t i = startLed; i < startLed + STRIPE_LENGTH; i++ ) {
       leds[i] = patternCopy[i];
     }
 
@@ -520,7 +520,7 @@ void vuMeter2() {
   fadeall(map( numTwirlers, 1, 6, 245, 130 ));
   //  fill_solid(leds, NUM_LEDS, CRGB::Black);
 
-  for (int i = 0 ; i < numTwirlers ; i++) {
+  for (uint8_t i = 0 ; i < numTwirlers ; i++) {
     pos = (first + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
     if ( (i % 2) == 0 ) {
       leds[pos] = CRGB::White ;
@@ -548,7 +548,7 @@ void twirlers(int numTwirlers, bool opposing ) {
     fadeall(map( numTwirlers, 1, 6, 240, 150 ));
   }
 
-  for (int i = 0 ; i < numTwirlers ; i++) {
+  for (uint8_t i = 0 ; i < numTwirlers ; i++) {
     if ( (i % 2) == 0 ) {
       pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
       if ( leds[pos] ) { // FALSE if currently BLACK - don't blend with black
@@ -720,7 +720,7 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
     dataSmoothing = 200 - (speed * 4);
   }
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (uint8_t i = 0; i < NUM_LEDS; i++) {
     int ioffset = scale * i;
 
     uint8_t data = inoise8(x + ioffset, y, z);
@@ -748,7 +748,7 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
 
   static uint8_t ihue = 0;
 
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (uint8_t i = 0; i < NUM_LEDS; i++) {
     // We use the value at the i coordinate in the noise
     // array for our brightness, and a 'random' value from NUM_LEDS - 1
     // for our pixel's index into the color palette.
@@ -781,23 +781,84 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
 
 
 void pendulum() {
-  static int counter = 0 ;
-  static int hue = map( yprX, 0, 360, 0, 255 ) ; // yaw for color
-  static int sPos1 = map( cubicwave8(counter), 0, 255, 0, 30) ;
-  static int sPos2 = map( cubicwave8(counter), 0, 255, 30, 60 ) ;
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  int hue = map( yprX, 0, 360, 0, 255 ) ; // yaw for color
+  int sPos1 = beatsin8( tapTempo.getBPM(), 0, 30 ) ;
+  int sPos2 = beatsin8( tapTempo.getBPM(), 30, 60 ) ;
   fillGradientRing(sPos1, CHSV(hue, 255, 0), sPos1 + 10, CHSV(hue, 255, MAX_BRIGHT));
   fillGradientRing(sPos1 + 11, CHSV(hue, 255, MAX_BRIGHT), sPos1 + 20, CHSV(hue, 255, 0));
   fillGradientRing(sPos2, CHSV(hue + 128, 255, 0), sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT));
   fillGradientRing(sPos2 + 11, CHSV(hue + 128, 255, MAX_BRIGHT), sPos2 + 20, CHSV(hue + 128, 255, 0));
   FastLED.show();
-  counter += 6 ;  // increase for faster swinging.
-//  if ( sPos1 == 0 ) {
-//    syncToBPM() ;  // sync to BPM 
-//  }
-
 }
 
 
 
+
+void bounceBlend() {
+  uint8_t speed = beatsin8( tapTempo.getBPM(), 0, 255);
+  static int startLed = 1 ;
+  CHSV endclr = blend(CHSV(0, 255, 255), CHSV(160, 255, 255) , speed);
+  CHSV midclr = blend(CHSV(160, 255, 255) , CHSV(0, 255, 255) , speed);
+  fillGradientRing(startLed, endclr, startLed + NUM_LEDS / 2, midclr);
+  fillGradientRing(startLed + NUM_LEDS / 2 + 1, midclr, startLed + NUM_LEDS, endclr);
+
+  FastLED.show();
+  
+  if ( (taskLedModeSelect.getRunCounter() % 5 ) == 0 ) {
+    startLed++ ;
+  }
+}
+
+
+/* juggle_pal
+   Originally by: Mark Kriegsman
+   Modified By: Andrew Tuline
+   Modified further by: Costyn van Dongen
+   Date: May, 2017
+   Juggle just moves some balls back and forth. A single ball could be a Cylon effect. I've added several variables to this simple routine.
+*/
+
+#define JP_MAX_CHANGES 24
+
+void juggle_pal() {                                             // A time (rather than loop) based demo sequencer. This gives us full control over the length of each sequence.
+
+  static uint8_t    numdots =   4;                                     // Number of dots in use.
+  static uint8_t   thisfade =   2;                                     // How long should the trails be. Very low value = longer trails.
+  static uint8_t   thisdiff =  16;                                     // Incremental change in hue between each dot.
+  static uint8_t    thishue =   0;                                     // Starting hue.
+  static uint8_t     curhue =   0;                                     // The current hue
+  static uint8_t    thissat = 255;                                     // Saturation of the colour.
+  static uint8_t thisbright = MAX_BRIGHT;                               // How bright should the LED/display be.
+  static uint8_t   thisbeat =   35;                                     // Higher = faster movement.
+
+  static CRGBPalette16 currentPalette = CRGBPalette16(CRGB::Black);    // These have to be static for some unknown reason
+  static CRGBPalette16 targetPalette = RainbowColors_p;                // These have to be static for some unknown reason
+
+  EVERY_N_MILLISECONDS(50) {                                 // AWESOME palette blending capability provided as required.
+    nblendPaletteTowardPalette(currentPalette, targetPalette, JP_MAX_CHANGES);
+  }
+
+  uint8_t secondHand = (millis() / 1000) % 60;                // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
+  static uint8_t lastSecond = 99;                             // Static variable, means it's only defined once. This is our 'debounce' variable.
+
+  if (lastSecond != secondHand) {                             // Debounce to make sure we're not repeating an assignment.
+    lastSecond = secondHand;
+    switch (secondHand) {
+      case  0: numdots = 1; thisbeat = tapTempo.getBPM() / 2; thisdiff = 8;  thisfade = 8;  thishue = 0;   break;                // You can change values here, one at a time , or altogether.
+      case  7: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 4;  thisfade = 12; thishue = 0;   break;                // You can change values here, one at a time , or altogether.
+      case 25: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 50; thishue = 128; break;
+      case 40: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 16; thisfade = 50; thishue = 0; break;
+      case 52: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 80; thishue = 160; break;
+    }
+  }
+
+  curhue = thishue;                                           // Reset the hue values.
+  fadeToBlackBy(leds, NUM_LEDS, thisfade);
+
+  for ( int i = 0; i < numdots; i++) {
+    leds[beatsin16(thisbeat + i + numdots, 0, NUM_LEDS - 1)] += ColorFromPalette(currentPalette, curhue , thisbright, LINEARBLEND); // Munge the values and pick a colour from the palette
+    curhue += thisdiff;
+  }
+
+} // juggle_pal()
 
