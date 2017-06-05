@@ -21,14 +21,6 @@ void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor 
 
       fill_gradient(leds, actualStart, startColor, NUM_LEDS - 1, colorAtLEDZero, SHORTEST_HUES);
       fill_gradient(leds, 0, colorAtLEDZero, actualEnd, endColor, SHORTEST_HUES);
-      /*
-            Serial.print(F("\t"));
-            Serial.print(endLed - startLed) ;
-            Serial.print(F("\t"));
-            Serial.print(ratio) ;
-            Serial.print(F("\t"));
-            Serial.print(normRatio) ;
-      */
     } else {
       fill_gradient(leds, actualStart, startColor, actualEnd, endColor, SHORTEST_HUES);
     }

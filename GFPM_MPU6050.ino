@@ -78,6 +78,7 @@ void getYPRAccel() {
   } else if ( maxAccel < 7000 ) {
     inBeat = false ;
     tapTempo.update(false);
+    
     if ( longPressActive ) {
       digitalWrite(BUTTON_LED_PIN, LOW); // turn off LED, normal operation
     } else {  // normal operation: 

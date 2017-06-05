@@ -1,14 +1,18 @@
 /*
-   Heavily modified from https://learn.adafruit.com/animated-neopixel-gemma-glow-fur-scarf
+   Inspiration from: https://learn.adafruit.com/animated-neopixel-gemma-glow-fur-scarf
 
    By: Costyn van Dongen
 
    Future ideas:
-   - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I
+   - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I  (for strip, not ring)
 
    Note: MAX LEDS: 255 (due to use of uint8_t in for loops)
+
+   TODO:
+     Get rid of MPU interrupt stuff. I don't need it, but removing it without breaking shit is tricky.
 */
 
+// Turn on microsecond resolution; needed to sync some routines to BPM
 #define _TASK_MICRO_RES
 
 
@@ -37,75 +41,174 @@
 #define NUM_LEDS    60   // how many LEDs you have
 #define MAX_BRIGHT  200  // 0-255, higher number is brighter. 
 #define SATURATION  255   // 0-255, 0 is pure white, 255 is fully saturated color
-#define STEPS       3   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
 #define BUTTON_LED_PIN 5   // pin to which the button LED is attached
 #define COLOR_ORDER GRB  // Try mixing up the letters (RGB, GBR, BRG, etc) for a whole new world of color combinations
-#define LOOPSTART 0
 
-#define LEDMODE_SELECT_DEFAULT_INTERVAL 50 // default scheduling time for LEDMODESELECT
-#define PALETTE_SPEED  15                 // Default How fast the palette colors move.   Higher delay = slower movement.
-#define FIRE_SPEED  85                    // Default Fire Speed; delay in millseconds. Higher delay = slower movement.
-#define CYLON_SPEED 13                    // Default Cylon Speed; delay in millseconds. Higher delay = slower movement.
-#define FADEGLITTER_SPEED 10              // Default delay in millseconds. Higher delay = slower movement.
-#define DISCOGLITTER_SPEED 20             // Default delay in millseconds. Higher delay = slower movement.
-
-//#define WHITESTRIPE
-#ifdef WHITESTRIPE
-#define WHITESTRIPE_SPEED 5   // how fast white stripe goes
-#endif
+#define LEDMODE_SELECT_DEFAULT_INTERVAL 50 // default scheduling time for LEDMODESELECT, in microseconds
 
 CRGB leds[NUM_LEDS];
 // unsigned long lastButtonChange = 0; // button debounce timer.
-boolean longPressActive = false;
 
+// BPM and button stuff
+boolean longPressActive = false;
 ArduinoTapTempo tapTempo;
 
 
+#define RT_P_RB_STRIPE
+/*
+  #define RT_P_OCEAN
+  #define RT_P_HEAT
+  #define RT_P_LAVA
+  #define RT_P_PARTY
+  #define RT_P_FOREST
+  #define RT_TWIRL1
+  #define RT_TWIRL2
+  #define RT_TWIRL4
+  #define RT_TWIRL6
+  #define RT_TWIRL2_O
+  #define RT_TWIRL4_O
+  #define RT_TWIRL6_O
+  #define RT_FADE_GLITTER
+  #define RT_DISCO_GLITTER
+  #define RT_RACERS
+  #define RT_WAVE
+  #define RT_SHAKE_IT
+  */
+  
+#define RT_PULSE2  // TODO
+// #define RT_PULSE_STATIC  // TODO
+//#define RT_STROBE1
+//#define RT_STROBE2
+//#define RT_VUMETER  // TODO
+//#define RT_GLED
+//#define RT_HEARTBEAT
+//#define RT_FASTLOOP
+//#define RT_FASTLOOP2
+//#define RT_PENDULUM
+//#define RT_BOUNCEBLEND
+//#define RT_JUGGLE_PAL
+//#define RT_NOISE_LAVA
+//#define RT_NOISE_PARTY
+//#define RT_BLACK
+
 byte ledMode = 0 ; // Which mode do we start with
 
+// Routine Palette Rainbow is always included - a safe routine
 const char *routines[] = {
-  "rb",         // 0
-  "ocean",      // 1
-  "heat",       // 2
-  "party",      // 3
+  "p_rb",
+#ifdef RT_P_RB_STRIPE
+  "p_rb_stripe",
+#endif
+#ifdef RT_P_OCEAN
+  "p_ocean",
+#endif
+#ifdef RT_P_HEAT
+  "p_heat",
+#endif
+#ifdef RT_P_LAVA
+  "p_lava",
+#endif
+#ifdef RT_P_PARTY
+  "p_party",
+#endif
+#ifdef RT_TWIRL1
   "twirl1",     // 4
+#endif
+#ifdef RT_TWIRL2
   "twirl2",     // 5
+#endif
+#ifdef RT_TWIRL4
   "twirl4",     // 6
+#endif
+#ifdef RT_TWIRL6
   "twirl6",     // 7
+#endif
+#ifdef RT_TWIRL2_O
   "twirl2o",    // 8
+#endif
+#ifdef RT_TWIRL4_O
   "twirl4o",    // 9
+#endif
+#ifdef RT_TWIRL6_O
   "twirl6o",    // 10
+#endif
+#ifdef RT_FADE_GLITTER
   "fglitter",   // 11
+#endif
+#ifdef RT_DISCO_GLITTER
   "dglitter",   // 12
+#endif
+#ifdef RT_RACERS
   "racers",     // 13
+#endif
+#ifdef RT_PULSE2
+  "pulse2",     // 13
+#endif
+#ifdef RT_PULSE_STATIC
+  "pulsestatic",     // 13
+#endif
+#ifdef RT_WAVE
   "wave",       // 14
+#endif
+#ifdef RT_SHAKE_IT
   "shakeit",    // 15
+#endif
+#ifdef RT_STROBE1
   "strobe1",    // 16
+#endif
+#ifdef RT_STROBE2
   "strobe2",    // 17
+#endif
+#ifdef RT_GLED
   "gled",       // 18
+#endif
+#ifdef RT_HEARTBEAT
   "heartbeat",  // 19
+#endif
+#ifdef RT_FASTLOOP
   "fastloop",   // 20
+#endif
+#ifdef RT_FASTLOOP2
   "fastloop2",  // 21
+#endif
+#ifdef RT_PENDULUM
   "pendulum",   // 22
+#endif
+#ifdef RT_VUMETER
+  "vumeter",   // 22
+#endif
+#ifdef RT_NOISE_LAVA
   "noise_lava", // 23
+#endif
+#ifdef RT_NOISE_PARTY
+  "noise_party", // 23
+#endif
+#ifdef RT_BOUNCEBLEND
+  "bounceblend", // 23
+#endif
+#ifdef RT_JUGGLE_PAL
+  "jugglepal",
+#endif
+#ifdef RT_BLACK
+  "black", // 23
+#endif
+
 };
+
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
 
 
 /* Scheduler stuff */
+#define LEDMODE_SELECT_DEFAULT_INTERVAL 50000 // default scheduling time for LEDMODESELECT, in microseconds
 void ledModeSelect() ; // prototype method
 Scheduler runner;
 Task taskLedModeSelect( LEDMODE_SELECT_DEFAULT_INTERVAL, TASK_FOREVER, &ledModeSelect); // routine which adds/removes tasks according to ledmode
 
-#ifdef WHITESTRIPE
-void whiteStripe() ; // prototype method
-Task taskWhiteStripe( WHITESTRIPE_SPEED, TASK_FOREVER, &whiteStripe); // routine which adds/removes tasks according to ledmode
-#endif
+#define TASK_CHECK_BUTTON_PRESS_INTERVAL 10000   // in microseconds
+void checkButtonPress() ; // prototype method
+Task taskCheckButtonPress( TASK_CHECK_BUTTON_PRESS_INTERVAL, TASK_FOREVER, &checkButtonPress); // routine which adds/removes tasks according to ledmode
 
-
-
-//#define _TASK_SLEEP_ON_IDLE_RUN
 
 // ==================================================================== //
 // ===                      MPU6050 stuff                         ===== //
@@ -139,16 +242,13 @@ int yprY = 0 ;
 int yprZ = 0 ;
 
 void getDMPData() ; // prototype method
-//void checkButtonPress() ; // prototype method
 Task taskGetDMPData( 3000, TASK_FOREVER, &getDMPData);
-// Task taskCheckButtonPress( 50, TASK_FOREVER, &checkButtonPress);
+
 
 #ifdef DEBUG
 void printDebugging() ; // prototype method
 Task taskPrintDebugging( 100, TASK_FOREVER, &printDebugging);
 #endif
-
-
 
 
 
@@ -159,7 +259,7 @@ void setup() {
   FastLED.setBrightness(  MAX_BRIGHT );
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(BUTTON_LED_PIN, OUTPUT);
-  digitalWrite(BUTTON_LED_PIN, HIGH); 
+  digitalWrite(BUTTON_LED_PIN, HIGH);
 
   //  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), shortKeyPress, RISING);
 
@@ -177,14 +277,9 @@ void setup() {
   runner.addTask(taskLedModeSelect);
   taskLedModeSelect.enable() ;
 
-  //runner.addTask(taskCheckButtonPress);
-  //taskCheckButtonPress.enable() ;
+  runner.addTask(taskCheckButtonPress);
+  taskCheckButtonPress.enable() ;
 
-
-#ifdef WHITESTRIPE
-  runner.addTask(taskWhiteStripe);
-  taskWhiteStripe.enable() ;
-#endif
 
   // ==================================================================== //
   // ==================================================================== //
@@ -210,15 +305,6 @@ void setup() {
   mpu.setYGyroOffset(0);
   mpu.setZGyroOffset(-23);
 
-  /*
-    mpu.setXAccelOffset(-287);
-    mpu.setYAccelOffset(-4);
-    mpu.setZAccelOffset(1560);
-    mpu.setXGyroOffset(29);
-    mpu.setYGyroOffset(-4);
-    mpu.setZGyroOffset(15);
-  */
-
   if (devStatus == 0) {
     mpu.setDMPEnabled(true);
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), dmpDataReady, RISING);
@@ -237,172 +323,209 @@ void setup() {
   }
 
   runner.addTask(taskGetDMPData);
+  taskGetDMPData.enable() ;
 
 #ifdef DEBUG
   //  runner.addTask(taskPrintDebugging);
   //  taskPrintDebugging.enable() ;
 #endif
 
-  //  tapTempo.setMaxBPM( 180 ) ;
-  //  tapTempo.setMinBPM( 90 ) ;
-
-
 
 }  // end setup()
 
 
 
-#define HEARTBEAT_INTERVAL 1000  // 1 second
 
 void loop() {
-  /*
-    #ifdef DEBUG
-    static long lastHeartbeat = millis() ;
-    static unsigned int heartBeatNumber = 0 ;
-
-    if ( millis() - lastHeartbeat > HEARTBEAT_INTERVAL ) {
-      DEBUG_PRINT(F(".")) ;
-      DEBUG_PRINTLN(heartBeatNumber) ;
-      lastHeartbeat = millis() ;
-      heartBeatNumber++ ;
-    }
-    #endif
-  */
   runner.execute();
-
-  checkButtonPress() ;
 }
+
 
 
 
 void ledModeSelect() {
 
-  if ( ledMode >= 0 and ledMode <= 3 ) {
-    FillLEDsFromPaletteColors() ;
-    taskLedModeSelect.setInterval( beatsin8( 30, 5000, 25000) ) ;
-//    taskLedModeSelect.setInterval( 25000 ) ;
-    taskGetDMPData.enableIfNot() ;
+  if ( strcmp(routines[ledMode], "p_rb") == 0  ) {
+    FillLEDsFromPaletteColors(0) ;
 
+#ifdef RT_P_RB_STRIPE
+  } else if ( strcmp(routines[ledMode], "p_rb_stripe") == 0 ) {
+    FillLEDsFromPaletteColors(1) ;
+#endif
+
+#ifdef RT_P_OCEAN
+  } else if ( strcmp(routines[ledMode], "p_ocean") == 0 ) {
+    FillLEDsFromPaletteColors(2) ;
+#endif
+
+#ifdef RT_P_HEAT
+  } else if ( strcmp(routines[ledMode], "p_heat") == 0 ) {
+    FillLEDsFromPaletteColors(3) ;
+#endif
+
+#ifdef RT_P_LAVA
+  } else if ( strcmp(routines[ledMode], "p_lava") == 0 ) {
+    FillLEDsFromPaletteColors(4) ;
+#endif
+
+#ifdef RT_P_PARTY
+  } else if ( strcmp(routines[ledMode], "p_party") == 0 ) {
+    FillLEDsFromPaletteColors(5) ;
+#endif
+
+#ifdef RT_P_CLOUD
+  } else if ( strcmp(routines[ledMode], "p_cloud") == 0 ) {
+    FillLEDsFromPaletteColors(6) ;
+#endif
+
+#ifdef RT_P_FOREST
+  } else if ( strcmp(routines[ledMode], "p_forest") == 0 ) {
+    FillLEDsFromPaletteColors(7) ;
+#endif
+
+#ifdef RT_TWIRL1
   } else if ( strcmp(routines[ledMode], "twirl1") == 0 ) {
     twirlers( 1, false ) ;
-    taskGetDMPData.enableIfNot() ;
+#endif
 
+#ifdef RT_TWIRL2
   } else if ( strcmp(routines[ledMode], "twirl2") == 0 ) {
     twirlers( 2, false ) ;
+#endif
 
+#ifdef RT_TWIRL4
   } else if ( strcmp(routines[ledMode], "twirl4") == 0 ) {
     twirlers( 4, false ) ;
+#endif
 
+#ifdef RT_TWIRL6
   } else if ( strcmp(routines[ledMode], "twirl6") == 0 ) {
     twirlers( 6, false ) ;
+#endif
 
+#ifdef RT_TWIRL2_O
   } else if ( strcmp(routines[ledMode], "twirl2o") == 0 ) {
     twirlers( 2, true ) ;
+#endif
 
+#ifdef RT_TWIRL4_O
   } else if ( strcmp(routines[ledMode], "twirl4o") == 0 ) {
     twirlers( 4, true ) ;
+#endif
 
+#ifdef RT_TWIRL6_O
   } else if ( strcmp(routines[ledMode], "twirl6o") == 0 ) {
     twirlers( 6, true ) ;
+#endif
 
-    // Fade glitter
+#ifdef RT_FADE_GLITTER
   } else if ( strcmp(routines[ledMode], "fglitter") == 0 ) {
     fadeGlitter() ;
-    //    taskLedModeSelect.setInterval( FADEGLITTER_SPEED ) ;
     taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 4000), 0, 4000, 20, 5 ) * 1000 ) ;
-    taskGetDMPData.enableIfNot() ;
-    FastLED.setBrightness( MAX_BRIGHT ) ;
+#endif
 
-
-    //  Disco glitter
+#ifdef RT_DISCO_GLITTER
   } else if ( strcmp(routines[ledMode], "dglitter") == 0 ) {
     discoGlitter() ;
     taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 2500), 0, 2500, 40, 2 ) * 1000 ) ;
-    taskGetDMPData.enableIfNot() ;
-    FastLED.setBrightness( MAX_BRIGHT ) ;
+#endif
 
-
+#ifdef RT_GLED
     // Gravity LED
   } else if ( strcmp(routines[ledMode], "gled") == 0 ) {
     gLed() ;
-    taskGetDMPData.enableIfNot() ;
     taskLedModeSelect.setInterval( 5000 ) ;
+#endif
 
-    // Black - off
+#ifdef RT_BLACK
   } else if ( strcmp(routines[ledMode], "black") == 0 ) {
     fill_solid(leds, NUM_LEDS, CRGB::Black);
     FastLED.show();
     taskLedModeSelect.setInterval( 500 * 1000 ) ;  // long because nothing is going on anyways.
-    taskGetDMPData.disable() ;
+#endif
 
-    /*
-      } else if ( strcmp(routines[ledMode], "racers") == 0 ) {
-        racingLeds() ;
-        taskLedModeSelect.setInterval( 8 * 1000) ;
-        taskGetDMPData.disable() ;
-        FastLED.setBrightness( MAX_BRIGHT ) ;
+#ifdef RT_RACERS
+  } else if ( strcmp(routines[ledMode], "racers") == 0 ) {
+    racingLeds() ;
+    taskLedModeSelect.setInterval( 8 * 1000) ;
+#endif
 
-      } else if ( strcmp(routines[ledMode], "wave") == 0 ) {
-        waveYourArms() ;
-        taskGetDMPData.enableIfNot() ;
-        taskLedModeSelect.setInterval( 15 * 1000) ;
-    */
+#ifdef RT_WAVE
+  } else if ( strcmp(routines[ledMode], "wave") == 0 ) {
+    waveYourArms() ;
+    taskLedModeSelect.setInterval( 15 * 1000) ;
+#endif
+
+#ifdef RT_SHAKE_IT
   } else if ( strcmp(routines[ledMode], "shakeit") == 0 ) {
     shakeIt() ;
     taskLedModeSelect.setInterval( 10 * 1000 ) ;
-    taskGetDMPData.enableIfNot() ;
-    FastLED.setBrightness( MAX_BRIGHT ) ;
+#endif
 
-  } else if ( strcmp(routines[ledMode], "strobe2") == 0 ) {
-    strobe2() ;
-    taskLedModeSelect.setInterval( 10 * 1000 ) ;
-    taskGetDMPData.enableIfNot() ;
-
+#ifdef RT_STROBE1
   } else if ( strcmp(routines[ledMode], "strobe1") == 0 ) {
     strobe1() ;
     taskLedModeSelect.setInterval( 5 * 1000 ) ;
-    taskGetDMPData.enableIfNot() ;
+#endif
 
-/*
+#ifdef RT_STROBE2
+  } else if ( strcmp(routines[ledMode], "strobe2") == 0 ) {
+    strobe2() ;
+    taskLedModeSelect.setInterval( 10 * 1000 ) ;
+#endif
 
+#ifdef RT_HEARTBEAT
   } else if ( strcmp(routines[ledMode], "heartbeat") == 0 ) {
     heartbeat() ;
-    //    taskLedModeSelect.setInterval( 10 * 1000) ;
-    taskGetDMPData.enableIfNot() ;
+#endif
 
-*/
-    /*
-      } else if ( strcmp(routines[ledMode], "vumeter") == 0 ) {
-        vuMeter() ;
-        taskLedModeSelect.setInterval( 8 * 1000) ;
-        taskGetDMPData.disable() ;
-    */
+#ifdef RT_VUMETER
+  } else if ( strcmp(routines[ledMode], "vumeter") == 0 ) {
+    vuMeter() ;
+    taskLedModeSelect.setInterval( 8 * 1000) ;
+#endif
 
+#ifdef RT_FASTLOOP
   } else if ( strcmp(routines[ledMode], "fastloop") == 0 ) {
     fastLoop( false ) ;
-    //    taskLedModeSelect.setInterval( 5 * 1000) ;
-    taskGetDMPData.enableIfNot() ;
+#endif
 
+#ifdef RT_FASTLOOP2
   } else if ( strcmp(routines[ledMode], "fastloop2") == 0 ) {
     fastLoop( true ) ;
     taskLedModeSelect.setInterval( 10 * 1000) ;
-    taskGetDMPData.disable() ;
+#endif
 
+#ifdef RT_PENDULUM
   } else if ( strcmp(routines[ledMode], "pendulum") == 0 ) {
     pendulum() ;
-    taskLedModeSelect.setInterval( 10 * 1000) ;
-    taskGetDMPData.enableIfNot() ;
+    taskLedModeSelect.setInterval( 1500 ) ; // needs a fast refresh rate
+#endif
 
-  } else if ( strcmp(routines[ledMode], "noise_lava") == 0 ) {
-    fillnoise8( 0, 20, 30, 1); // pallette, speed, scale, loop
+#ifdef RT_BOUNCEBLEND
+  } else if ( strcmp(routines[ledMode], "bounceblend") == 0 ) {
+    bounceBlend() ;
     taskLedModeSelect.setInterval( 10 * 1000) ;
-    taskGetDMPData.disable() ;
-    /*
-      } else if ( strcmp(routines[ledMode], "noise_party") == 0 ) {
-        fillnoise8( 1, 20, 30, 1); // pallette, speed, scale, loop
-        taskLedModeSelect.setInterval( 10 * 1000 ) ;
-        taskGetDMPData.disable() ;
-    */
+#endif
+
+#ifdef RT_JUGGLE_PAL
+  } else if ( strcmp(routines[ledMode], "jugglepal") == 0 ) {
+    jugglePal() ;
+    taskLedModeSelect.setInterval( 850 ) ; // fast refresh rate needed to not skip any LEDs
+#endif
+
+#ifdef RT_NOISE_LAVA
+  } else if ( strcmp(routines[ledMode], "noise_lava") == 0 ) {
+    fillnoise8( 0, beatsin8( tapTempo.getBPM(), 1, 25), 30, 1); // pallette, speed, scale, loop
+    taskLedModeSelect.setInterval( 10 * 1000 ) ;
+#endif
+
+#ifdef RT_NOISE_PARTY
+  } else if ( strcmp(routines[ledMode], "noise_party") == 0 ) {
+    fillnoise8( 1, beatsin8( tapTempo.getBPM(), 1, 25), 30, 1); // pallette, speed, scale, loop
+//    taskLedModeSelect.setInterval( beatsin16( tapTempo.getBPM(), 2000, 50000) ) ;
+    taskLedModeSelect.setInterval( 10 * 1000 ) ;
+#endif
   }
 
 }
