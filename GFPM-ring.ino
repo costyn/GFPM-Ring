@@ -37,8 +37,9 @@
 #define NUM_LEDS    60   // how many LEDs you have
 #define MAX_BRIGHT  200  // 0-255, higher number is brighter. 
 #define SATURATION  255   // 0-255, 0 is pure white, 255 is fully saturated color
-#define STEPS       2   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
+#define STEPS       3   // How wide the bands of color are.  1 = more like a gradient, 10 = more like stripes
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
+#define BUTTON_LED_PIN 5   // pin to which the button LED is attached
 #define COLOR_ORDER GRB  // Try mixing up the letters (RGB, GBR, BRG, etc) for a whole new world of color combinations
 #define LOOPSTART 0
 
@@ -61,41 +62,33 @@ boolean longPressActive = false;
 ArduinoTapTempo tapTempo;
 
 
-byte ledMode = 15 ; // Which mode do we start with
+byte ledMode = 0 ; // Which mode do we start with
 
 const char *routines[] = {
   "rb",         // 0
-  //  "rb_stripe",  // 1
   "ocean",      // 1
   "heat",       // 2
   "party",      // 3
-  //  "cloud",      // 5
-  //  "forest",     // 6
-  "twirl1",     // 7
-  "twirl2",     // 8
-  "twirl4",     // 9
-  "twirl6",     // 10
-  "twirl2o",    // 11
-  "twirl4o",    // 12
-  "twirl6o",    // 13
-  "fglitter",   // 14
-  "dglitter",   // 15
-  //  "pulse2",     // 16
-  //  "pulsestatic",// 17
-  "racers",     // 18
-  "wave",       // 19
-  "shakeit",    // 20
-  "strobe1",    // 21
-  "strobe2",    // 22
-  "gled",       // 23
-  "heartbeat",  // 24
-  //  "vumeter",    // 25
-  "fastloop",   // 26
-  "fastloop2",  // 27
-  "pendulum",  // 27
-  //  "noise_party",// 28
-  "noise_lava", // 29
-  "black"       // 30
+  "twirl1",     // 4
+  "twirl2",     // 5
+  "twirl4",     // 6
+  "twirl6",     // 7
+  "twirl2o",    // 8
+  "twirl4o",    // 9
+  "twirl6o",    // 10
+  "fglitter",   // 11
+  "dglitter",   // 12
+  "racers",     // 13
+  "wave",       // 14
+  "shakeit",    // 15
+  "strobe1",    // 16
+  "strobe2",    // 17
+  "gled",       // 18
+  "heartbeat",  // 19
+  "fastloop",   // 20
+  "fastloop2",  // 21
+  "pendulum",   // 22
+  "noise_lava", // 23
 };
 #define NUMROUTINES (sizeof(routines)/sizeof(char *)) //array size  
 
@@ -165,6 +158,9 @@ void setup() {
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
   FastLED.setBrightness(  MAX_BRIGHT );
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_LED_PIN, OUTPUT);
+  digitalWrite(BUTTON_LED_PIN, HIGH); 
+
   //  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), shortKeyPress, RISING);
 
   set_max_power_in_volts_and_milliamps(5, 1500);
@@ -283,7 +279,8 @@ void ledModeSelect() {
 
   if ( ledMode >= 0 and ledMode <= 3 ) {
     FillLEDsFromPaletteColors() ;
-    taskLedModeSelect.setInterval( PALETTE_SPEED * 1000 ) ;
+    taskLedModeSelect.setInterval( beatsin8( 30, 5000, 25000) ) ;
+//    taskLedModeSelect.setInterval( 25000 ) ;
     taskGetDMPData.enableIfNot() ;
 
   } else if ( strcmp(routines[ledMode], "twirl1") == 0 ) {
@@ -307,18 +304,6 @@ void ledModeSelect() {
 
   } else if ( strcmp(routines[ledMode], "twirl6o") == 0 ) {
     twirlers( 6, true ) ;
-
-    /*
-        // FastLED Fire2012 split down the middle, so the fire flows "down" from the neck of the scarf to the ends
-      } else if ( strcmp(routines[ledMode], "fire2012") == 0 ) {
-        Fire2012() ;
-        FastLED.setBrightness( MAX_BRIGHT ) ;
-        //    taskLedModeSelect.setInterval( FIRE_SPEED ) ;
-      #define FIRE_MAX_SPEED 15  // lower value for faster
-      #define FIRE_MIN_SPEED 100
-        taskLedModeSelect.setInterval( map( yprZ, 0, 90, FIRE_MIN_SPEED, FIRE_MAX_SPEED ) * 1000 ) ;
-        taskGetDMPData.enableIfNot() ;
-    */
 
     // Fade glitter
   } else if ( strcmp(routines[ledMode], "fglitter") == 0 ) {
@@ -351,20 +336,6 @@ void ledModeSelect() {
     taskGetDMPData.disable() ;
 
     /*
-
-      } else if ( strcmp(routines[ledMode], "pulse2") == 0 ) {
-        pulse2() ;
-        taskLedModeSelect.setInterval( 10 * 1000) ;
-        taskGetDMPData.disable() ;
-
-
-      } else if ( strcmp(routines[ledMode], "pulsestatic") == 0 ) {
-        pulse_static() ;
-        taskLedModeSelect.setInterval( 8 * 1000) ;
-        taskGetDMPData.disable() ;
-
-    */
-    /*
       } else if ( strcmp(routines[ledMode], "racers") == 0 ) {
         racingLeds() ;
         taskLedModeSelect.setInterval( 8 * 1000) ;
@@ -392,12 +363,14 @@ void ledModeSelect() {
     taskLedModeSelect.setInterval( 5 * 1000 ) ;
     taskGetDMPData.enableIfNot() ;
 
+/*
 
   } else if ( strcmp(routines[ledMode], "heartbeat") == 0 ) {
     heartbeat() ;
     //    taskLedModeSelect.setInterval( 10 * 1000) ;
     taskGetDMPData.enableIfNot() ;
 
+*/
     /*
       } else if ( strcmp(routines[ledMode], "vumeter") == 0 ) {
         vuMeter() ;

@@ -5,7 +5,6 @@
 void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor ) {
   if ( startLed > endLed ) {
     fill_gradient(leds, endLed, CHSV(0, 255, 255) , startLed, CHSV(0, 255, 255), SHORTEST_HUES ); // show RED for error!
-    //    DEBUG_PRINTLN(F("GRMBL\t")) ;  // This should never happen
   } else {
     // Determine actual start and actual end (normalize using modulo):
     int actualStart = mod(startLed + NUM_LEDS, NUM_LEDS)  ;
@@ -186,7 +185,7 @@ void checkButtonPress() {
             ledMode = 0;
           }
 
-          FastLED.setBrightness( MAX_BRIGHT ) ; // reset it to 'default'  
+          FastLED.setBrightness( MAX_BRIGHT ) ; // reset it to 'default'
         }
       }
     }
@@ -207,22 +206,22 @@ int freeRam ()
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
-// Calculates difference between now and last time it was called 
+// Calculates difference between now and last time it was called
 // and adjusts the interval of taskLedModeSelect accordingly
 void syncToBPM() {
   static unsigned long lastTimeStamp = 0 ;
   unsigned long currentTimeStamp = millis() ;
   /*
-  DEBUG_PRINT( tapTempo.getBPM() ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( tapTempo.getBeatLength() ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( tapTempo.beatProgress() ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
-*/
+    DEBUG_PRINT( tapTempo.getBPM() ) ;
+    DEBUG_PRINT( F("\t") ) ;
+    DEBUG_PRINT( tapTempo.getBeatLength() ) ;
+    DEBUG_PRINT( F("\t") ) ;
+    DEBUG_PRINT( tapTempo.beatProgress() ) ;
+    DEBUG_PRINT( F("\t") ) ;
+    DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
+    DEBUG_PRINT( F("\t") ) ;
+    DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
+  */
   // converges quicker - not ideal, it causes it's own fluctuation
   int syncFactor = ( currentTimeStamp - lastTimeStamp - tapTempo.getBeatLength() ) * 10 ;
 

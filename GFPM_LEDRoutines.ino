@@ -5,7 +5,7 @@ void FillLEDsFromPaletteColors() {
 //  static int flowDir = 1 ;
 
   //  const CRGBPalette16 palettes[] = { RainbowColors_p, RainbowStripeColors_p, OceanColors_p, HeatColors_p, PartyColors_p, CloudColors_p, ForestColors_p } ;
-  const CRGBPalette16 palettes[] = { RainbowColors_p, OceanColors_p, HeatColors_p, PartyColors_p } ;
+  const CRGBPalette16 palettes[] = { RainbowStripeColors_p, OceanColors_p, HeatColors_p, PartyColors_p } ;
 
   /*
     if ( isMpuUp() ) {
@@ -23,7 +23,7 @@ void FillLEDsFromPaletteColors() {
     leds[i] = ColorFromPalette( palettes[ledMode], colorIndex, MAX_BRIGHT, LINEARBLEND );
     colorIndex += STEPS;
   }
-  addGlitter(80);
+//  addGlitter(80);
 
   FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
 
@@ -46,7 +46,7 @@ void FillLEDsFromPaletteColors() {
 void fadeGlitter() {
   addGlitter(90);
   FastLED.show();
-  fadeall(200);
+  fadeToBlackBy(leds, NUM_LEDS, 200);
 }
 
 void discoGlitter() {
@@ -436,7 +436,7 @@ void whiteStripe() {
 void gLedOrig() {
   leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
   FastLED.show();
-  fadeall(200);
+  fadeToBlackBy(leds, NUM_LEDS, 200);
 }
 */
 
@@ -812,13 +812,10 @@ void bounceBlend() {
 
 /* juggle_pal
    Originally by: Mark Kriegsman
-   Modified By: Andrew Tuline
+   Modified by: Andrew Tuline
    Modified further by: Costyn van Dongen
    Date: May, 2017
-   Juggle just moves some balls back and forth. A single ball could be a Cylon effect. I've added several variables to this simple routine.
 */
-
-#define JP_MAX_CHANGES 24
 
 void juggle_pal() {                                             // A time (rather than loop) based demo sequencer. This gives us full control over the length of each sequence.
 
@@ -831,21 +828,14 @@ void juggle_pal() {                                             // A time (rathe
   static uint8_t thisbright = MAX_BRIGHT;                               // How bright should the LED/display be.
   static uint8_t   thisbeat =   35;                                     // Higher = faster movement.
 
-  static CRGBPalette16 currentPalette = CRGBPalette16(CRGB::Black);    // These have to be static for some unknown reason
-  static CRGBPalette16 targetPalette = RainbowColors_p;                // These have to be static for some unknown reason
-
-  EVERY_N_MILLISECONDS(50) {                                 // AWESOME palette blending capability provided as required.
-    nblendPaletteTowardPalette(currentPalette, targetPalette, JP_MAX_CHANGES);
-  }
-
-  uint8_t secondHand = (millis() / 1000) % 60;                // IMPORTANT!!! Change '30' to a different value to change duration of the loop.
-  static uint8_t lastSecond = 99;                             // Static variable, means it's only defined once. This is our 'debounce' variable.
+  uint8_t secondHand = (millis() / 1000) % 60;                // Change '60' to a different value to change duration of the loop (also change timings below)
+  static uint8_t lastSecond = 99;                             // This is our 'debounce' variable.
 
   if (lastSecond != secondHand) {                             // Debounce to make sure we're not repeating an assignment.
     lastSecond = secondHand;
     switch (secondHand) {
-      case  0: numdots = 1; thisbeat = tapTempo.getBPM() / 2; thisdiff = 8;  thisfade = 8;  thishue = 0;   break;                // You can change values here, one at a time , or altogether.
-      case  7: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 4;  thisfade = 12; thishue = 0;   break;                // You can change values here, one at a time , or altogether.
+      case  0: numdots = 1; thisbeat = tapTempo.getBPM() / 2; thisdiff = 8;  thisfade = 8;  thishue = 0;   break;
+      case  7: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 4;  thisfade = 12; thishue = 0;   break;
       case 25: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 50; thishue = 128; break;
       case 40: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 16; thisfade = 50; thishue = 0; break;
       case 52: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 80; thishue = 160; break;
@@ -855,10 +845,12 @@ void juggle_pal() {                                             // A time (rathe
   curhue = thishue;                                           // Reset the hue values.
   fadeToBlackBy(leds, NUM_LEDS, thisfade);
 
-  for ( int i = 0; i < numdots; i++) {
-    leds[beatsin16(thisbeat + i + numdots, 0, NUM_LEDS - 1)] += ColorFromPalette(currentPalette, curhue , thisbright, LINEARBLEND); // Munge the values and pick a colour from the palette
+  for ( uint8_t i = 0; i < numdots; i++) {
+    leds[beatsin16(thisbeat + i + numdots, 0, NUM_LEDS - 1)] += ColorFromPalette(RainbowColors_p, curhue, thisbright, LINEARBLEND); // Munge the values and pick a colour from the palette
     curhue += thisdiff;
   }
+
+  FastLED.show();
 
 } // juggle_pal()
 

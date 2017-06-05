@@ -67,18 +67,26 @@ void getYPRAccel() {
   int maxXY    = max( aaReal.x, aaReal.y) ;
   int maxAccel = max( maxXY, aaReal.z) ;
 
-  static int inBeat = false;
+  static int inBeat = false; // debounce variable
 
-  if ( maxAccel > 6000 and inBeat == false ) {
+  if ( maxAccel > 7000 and inBeat == false ) {
     inBeat = true ;
     if ( longPressActive ) {   // only count BPM when button is held down
       tapTempo.update(true);
-      fill_solid(leds, 1, CRGB::Red);
-      FastLED.show();
+      digitalWrite(BUTTON_LED_PIN, HIGH); // Beat detected, light up
     }
-  } else if ( maxAccel < 6000 ) {
+  } else if ( maxAccel < 7000 ) {
     inBeat = false ;
     tapTempo.update(false);
+    if ( longPressActive ) {
+      digitalWrite(BUTTON_LED_PIN, LOW); // turn off LED, normal operation
+    } else {  // normal operation: 
+      if ( tapTempo.beatProgress() > 0.95 ) {
+        digitalWrite(BUTTON_LED_PIN, HIGH); // turn on LED, normal operation
+      } else {
+        digitalWrite(BUTTON_LED_PIN, LOW); // turn on LED, normal operation
+      }
+    }
   }
 }
 
