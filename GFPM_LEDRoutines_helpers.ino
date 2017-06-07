@@ -1,6 +1,8 @@
 // Fill a gradient on a LED ring with any possible start positions.
 // startLed and endLed may be negative (one or both), may be larger than NUM_LEDS (one or both)
-// startLed cannot (yet) be > endLed
+// TODO:
+// * startLed cannot (yet) be > endLed
+// * remove floating point calculation; replace by linear interpolation?
 
 void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor ) {
   if ( startLed > endLed ) {
@@ -26,6 +28,28 @@ void fillGradientRing( int startLed, CHSV startColor, int endLed, CHSV endColor 
     }
   }
 }
+
+// This is a little convoluted and could probably be written better :)
+void fillSolidRing( int startLed, int endLed, CHSV color ) {
+  if ( startLed > endLed ) {
+    fill_gradient(leds, endLed, CHSV(0, 255, 255), startLed, CHSV(0, 255, 255), SHORTEST_HUES ); // show RED for error!
+  } else {
+    // Determine actual start and actual end (normalize using custom modulo):
+    int actualStart = mod(startLed + NUM_LEDS, NUM_LEDS)  ;
+    int actualEnd = mod(endLed + NUM_LEDS, NUM_LEDS) ;
+
+    // If beginning is at say 50, and end at 10, then we split the fill in 2:
+    // * one from 50-59
+    // * one from 0-10
+    if ( actualStart > actualEnd ) {
+      fill_solid(leds + actualStart, NUM_LEDS - actualStart, color);
+      fill_solid(leds, actualEnd, color);
+    } else {
+      fill_solid(leds + actualStart, actualEnd - actualStart, color);
+    }
+  }
+}
+
 
 
 
@@ -140,6 +164,7 @@ void addGlitter( fract8 chanceOfGlitter)
 }
 
 
+
 #define LONG_PRESS_MIN_TIME 500  // minimum time for a long press
 #define SHORT_PRESS_MIN_TIME 100   // minimum time for a short press - debounce
 
@@ -198,30 +223,34 @@ int freeRam ()
   return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
 
+
+
 // Calculates difference between now and last time it was called
 // and adjusts the interval of taskLedModeSelect accordingly
 void syncToBPM() {
   static unsigned long lastTimeStamp = 0 ;
   unsigned long currentTimeStamp = millis() ;
-  /*
-    DEBUG_PRINT( tapTempo.getBPM() ) ;
-    DEBUG_PRINT( F("\t") ) ;
-    DEBUG_PRINT( tapTempo.getBeatLength() ) ;
-    DEBUG_PRINT( F("\t") ) ;
-    DEBUG_PRINT( tapTempo.beatProgress() ) ;
-    DEBUG_PRINT( F("\t") ) ;
-    DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
-    DEBUG_PRINT( F("\t") ) ;
-    DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
-  */
-  // converges quicker - not ideal, it causes it's own fluctuation
-  int syncFactor = ( currentTimeStamp - lastTimeStamp - tapTempo.getBeatLength() ) * 10 ;
 
-  if ( currentTimeStamp - lastTimeStamp != tapTempo.getBeatLength() ) { // we're outta sync, try harder
+  DEBUG_PRINT( tapTempo.getBPM() ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( tapTempo.getBeatLength() ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
+
+  unsigned long delta = currentTimeStamp - lastTimeStamp ;
+  long syncFactor = delta - tapTempo.getBeatLength() ;
+ 
+  DEBUG_PRINT( F("\t") ) ;
+  DEBUG_PRINT( syncFactor ) ;
+  DEBUG_PRINTLN() ;
+
+  if ( delta != tapTempo.getBeatLength() ) {  // we're outta sync, try harder :)
     taskLedModeSelect.setInterval( taskLedModeSelect.getInterval() - syncFactor ) ;
   } else {
-    DEBUG_PRINT( F("\tsync") ) ;
+    DEBUG_PRINT( F("\tsync\t") ) ; // we're in sync, hooray!
+    DEBUG_PRINTLN( tapTempo.getBPM() ) ; 
   }
-  DEBUG_PRINTLN() ;
   lastTimeStamp = millis() ;
 }

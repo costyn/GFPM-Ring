@@ -9,7 +9,9 @@
    Note: MAX LEDS: 255 (due to use of uint8_t in for loops)
 
    TODO:
-     Get rid of MPU interrupt stuff. I don't need it, but removing it without breaking shit is tricky.
+       Get rid of MPU interrupt stuff. I don't need it, but removing it without breaking shit is tricky.
+       three-sin-pal-demo
+       ripple-pal
 */
 
 // Turn on microsecond resolution; needed to sync some routines to BPM
@@ -24,7 +26,7 @@
 
 
 // Uncomment for debug output to Serial.
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x)       Serial.print (x)
@@ -39,7 +41,7 @@
 #define CHIPSET     WS2812B
 #define LED_PIN     12   // which pin your Neopixels are connected to
 #define NUM_LEDS    60   // how many LEDs you have
-#define MAX_BRIGHT  200  // 0-255, higher number is brighter. 
+#define MAX_BRIGHT  80  // 0-255, higher number is brighter. 
 #define SATURATION  255   // 0-255, 0 is pure white, 255 is fully saturated color
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
 #define BUTTON_LED_PIN 5   // pin to which the button LED is attached
@@ -54,33 +56,34 @@ CRGB leds[NUM_LEDS];
 boolean longPressActive = false;
 ArduinoTapTempo tapTempo;
 
+// A-la-carte routine selection. Uncomment each define below to
+// include or not include the routine in the uploaded code.
+// Most are kept commented during development for less code to
+// and staying within AVR328's flash/ram limits.
 
-#define RT_P_RB_STRIPE
-/*
-  #define RT_P_OCEAN
-  #define RT_P_HEAT
-  #define RT_P_LAVA
-  #define RT_P_PARTY
-  #define RT_P_FOREST
-  #define RT_TWIRL1
-  #define RT_TWIRL2
-  #define RT_TWIRL4
-  #define RT_TWIRL6
-  #define RT_TWIRL2_O
-  #define RT_TWIRL4_O
-  #define RT_TWIRL6_O
-  #define RT_FADE_GLITTER
-  #define RT_DISCO_GLITTER
-  #define RT_RACERS
-  #define RT_WAVE
-  #define RT_SHAKE_IT
-  */
-  
-#define RT_PULSE2  // TODO
-// #define RT_PULSE_STATIC  // TODO
+//#define RT_P_RB_STRIPE
+//#define RT_P_OCEAN
+//#define RT_P_HEAT
+//#define RT_P_LAVA
+//#define RT_P_PARTY
+//#define RT_P_FOREST
+#define RT_TWIRL1
+//#define RT_TWIRL2
+//#define RT_TWIRL4
+//#define RT_TWIRL6
+//#define RT_TWIRL2_O
+//#define RT_TWIRL4_O
+//#define RT_TWIRL6_O
+//#define RT_FADE_GLITTER
+//#define RT_DISCO_GLITTER
+//#define RT_RACERS
+//#define RT_WAVE
+//#define RT_SHAKE_IT
+//#define RT_PULSE2  // TODO - broken
+//#define RT_PULSE_STATIC  // TODO - broken
 //#define RT_STROBE1
 //#define RT_STROBE2
-//#define RT_VUMETER  // TODO
+//#define RT_VUMETER  // TODO - broken/unfinished
 //#define RT_GLED
 //#define RT_HEARTBEAT
 //#define RT_FASTLOOP
@@ -90,6 +93,9 @@ ArduinoTapTempo tapTempo;
 //#define RT_JUGGLE_PAL
 //#define RT_NOISE_LAVA
 //#define RT_NOISE_PARTY
+//#define RT_QUAD_STROBE
+//#define RT_PULSE_3
+//#define RT_PULSE_5
 //#define RT_BLACK
 
 byte ledMode = 0 ; // Which mode do we start with
@@ -113,85 +119,94 @@ const char *routines[] = {
   "p_party",
 #endif
 #ifdef RT_TWIRL1
-  "twirl1",     // 4
+  "twirl1",
 #endif
 #ifdef RT_TWIRL2
-  "twirl2",     // 5
+  "twirl2",
 #endif
 #ifdef RT_TWIRL4
-  "twirl4",     // 6
+  "twirl4",
 #endif
 #ifdef RT_TWIRL6
-  "twirl6",     // 7
+  "twirl6",
 #endif
 #ifdef RT_TWIRL2_O
-  "twirl2o",    // 8
+  "twirl2o",
 #endif
 #ifdef RT_TWIRL4_O
-  "twirl4o",    // 9
+  "twirl4o",
 #endif
 #ifdef RT_TWIRL6_O
-  "twirl6o",    // 10
+  "twirl6o",
 #endif
 #ifdef RT_FADE_GLITTER
-  "fglitter",   // 11
+  "fglitter",
 #endif
 #ifdef RT_DISCO_GLITTER
-  "dglitter",   // 12
+  "dglitter",
 #endif
 #ifdef RT_RACERS
-  "racers",     // 13
+  "racers",
 #endif
 #ifdef RT_PULSE2
-  "pulse2",     // 13
+  "pulse2",
 #endif
 #ifdef RT_PULSE_STATIC
-  "pulsestatic",     // 13
+  "pulsestatic",
 #endif
 #ifdef RT_WAVE
-  "wave",       // 14
+  "wave",
 #endif
 #ifdef RT_SHAKE_IT
-  "shakeit",    // 15
+  "shakeit",
 #endif
 #ifdef RT_STROBE1
-  "strobe1",    // 16
+  "strobe1",
 #endif
 #ifdef RT_STROBE2
-  "strobe2",    // 17
+  "strobe2",
 #endif
 #ifdef RT_GLED
-  "gled",       // 18
+  "gled",
 #endif
 #ifdef RT_HEARTBEAT
-  "heartbeat",  // 19
+  "heartbeat",
 #endif
 #ifdef RT_FASTLOOP
-  "fastloop",   // 20
+  "fastloop",
 #endif
 #ifdef RT_FASTLOOP2
-  "fastloop2",  // 21
+  "fastloop2",
 #endif
 #ifdef RT_PENDULUM
-  "pendulum",   // 22
+  "pendulum",
 #endif
 #ifdef RT_VUMETER
-  "vumeter",   // 22
+  "vumeter",
 #endif
 #ifdef RT_NOISE_LAVA
-  "noise_lava", // 23
+  "noise_lava",
 #endif
 #ifdef RT_NOISE_PARTY
-  "noise_party", // 23
+  "noise_party",
 #endif
 #ifdef RT_BOUNCEBLEND
-  "bounceblend", // 23
+  "bounceblend",
 #endif
 #ifdef RT_JUGGLE_PAL
   "jugglepal",
 #endif
+#ifdef RT_QUAD_STROBE
+  "quadstrobe",
+#endif
+#ifdef RT_PULSE_3
+  "pulse3",
+#endif
+#ifdef RT_PULSE_5
+  "pulse5",
+#endif
 #ifdef RT_BLACK
-  "black", // 23
+  "black",
 #endif
 
 };
@@ -200,14 +215,15 @@ const char *routines[] = {
 
 
 /* Scheduler stuff */
-#define LEDMODE_SELECT_DEFAULT_INTERVAL 50000 // default scheduling time for LEDMODESELECT, in microseconds
-void ledModeSelect() ; // prototype method
+#define LEDMODE_SELECT_DEFAULT_INTERVAL 50000   // default scheduling time for LEDMODESELECT, in microseconds
+void ledModeSelect() ;                          // prototype method
 Scheduler runner;
-Task taskLedModeSelect( LEDMODE_SELECT_DEFAULT_INTERVAL, TASK_FOREVER, &ledModeSelect); // routine which adds/removes tasks according to ledmode
+Task taskLedModeSelect( LEDMODE_SELECT_DEFAULT_INTERVAL, TASK_FOREVER, &ledModeSelect); 
+
 
 #define TASK_CHECK_BUTTON_PRESS_INTERVAL 10000   // in microseconds
-void checkButtonPress() ; // prototype method
-Task taskCheckButtonPress( TASK_CHECK_BUTTON_PRESS_INTERVAL, TASK_FOREVER, &checkButtonPress); // routine which adds/removes tasks according to ledmode
+void checkButtonPress() ;                       // prototype method
+Task taskCheckButtonPress( TASK_CHECK_BUTTON_PRESS_INTERVAL, TASK_FOREVER, &checkButtonPress); 
 
 
 // ==================================================================== //
@@ -523,9 +539,27 @@ void ledModeSelect() {
 #ifdef RT_NOISE_PARTY
   } else if ( strcmp(routines[ledMode], "noise_party") == 0 ) {
     fillnoise8( 1, beatsin8( tapTempo.getBPM(), 1, 25), 30, 1); // pallette, speed, scale, loop
-//    taskLedModeSelect.setInterval( beatsin16( tapTempo.getBPM(), 2000, 50000) ) ;
+    //    taskLedModeSelect.setInterval( beatsin16( tapTempo.getBPM(), 2000, 50000) ) ;
     taskLedModeSelect.setInterval( 10 * 1000 ) ;
 #endif
+
+#ifdef RT_QUAD_STROBE
+  } else if ( strcmp(routines[ledMode], "quadstrobe") == 0 ) {
+    quadStrobe();
+    taskLedModeSelect.setInterval( (60000 / (tapTempo.getBPM() * 4)) * 1000 ) ;
+#endif
+
+#ifdef RT_PULSE_3
+  } else if ( strcmp(routines[ledMode], "pulse3") == 0 ) {
+    pulse3();
+#endif
+
+#ifdef RT_PULSE_5
+  } else if ( strcmp(routines[ledMode], "pulse5") == 0 ) {
+    pulse5(3, false);
+    taskLedModeSelect.setInterval( 10 * 1000 ) ;
+#endif
+
   }
 
 }

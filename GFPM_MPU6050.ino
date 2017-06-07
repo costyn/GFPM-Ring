@@ -73,7 +73,7 @@ void getYPRAccel() {
     inBeat = true ;
     if ( longPressActive ) {   // only count BPM when button is held down
       tapTempo.update(true);
-      digitalWrite(BUTTON_LED_PIN, HIGH); // Beat detected, light up
+      digitalWrite(BUTTON_LED_PIN, HIGH); // Beat detected, light up to show beat detected
     }
   } else if ( maxAccel < 7000 ) {
     inBeat = false ;
@@ -81,7 +81,7 @@ void getYPRAccel() {
     
     if ( longPressActive ) {
       digitalWrite(BUTTON_LED_PIN, LOW); // turn off LED, normal operation
-    } else {  // normal operation: 
+    } else {  // normal operation; flash LED in time with BPM
       if ( tapTempo.beatProgress() > 0.95 ) {
         digitalWrite(BUTTON_LED_PIN, HIGH); // turn on LED, normal operation
       } else {
@@ -93,13 +93,7 @@ void getYPRAccel() {
 
 
 
-#define POWER 256
 int activityLevel() {
-  //  static int value ;
-  //  const int alpha = 178;
-  //  int measurement = round( (abs( aaRealX)  + abs( aaRealY)  + abs( aaRealZ )) / 3 );
-  // value = (alpha * measurement + (POWER - alpha) * value ) / POWER; //
-  //  return value ;
   return round( (abs( aaRealX )  + abs( aaRealY )  + abs( aaRealZ )) / 3 );
 }
 

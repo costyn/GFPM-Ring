@@ -28,7 +28,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
                                      ForestColors_p
 #endif
                                    } ;
-
+  // Check our orientation and adjust flow direction accordingly
   if ( isMpuUp() ) {
     flowDir = 1 ;
   } else if ( isMpuDown() ) {
@@ -74,9 +74,9 @@ void strobe1() {
   if ( tapTempo.beatProgress() > 0.95 ) {
     fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT)); // yaw for color
   } else if ( tapTempo.beatProgress() > 0.80 and tapTempo.beatProgress() < 0.85 ) {
-    fill_solid(leds, NUM_LEDS, CHSV( 0, 0, MAX_BRIGHT)); // yaw for color
+    fill_solid(leds, NUM_LEDS, CHSV( 0, 0, MAX_BRIGHT)); // white with brightness
   } else {
-    fill_solid(leds, NUM_LEDS, CRGB::Black); // yaw for color
+    fill_solid(leds, NUM_LEDS, CRGB::Black); // black
   }
   FastLED.show();
 }
@@ -95,206 +95,18 @@ void strobe2() {
 }
 #endif
 
-/*
-   pick a spot x
-   gradient1: x-10, x
-   gradient2: x, x+10
-   if brightness < MAX_BRIGHT then fadeup = true
-*/
 
-#ifdef RT_PULSE2
-#define MIN_BRIGHT 10
-void pulse2() {
-  uint8_t middle ;
-  static uint8_t startP ;
-  static uint8_t endP ;
-  static uint8_t hue ;
-  static int brightness = 0 ;
-  static int bAdder = 1;
-  static bool flowDir = 1;
-  static bool sequenceEnd = true ;
+#ifdef RT_FIRE2012
+#define COOLING  55
+#define SPARKING 120
+#define FIRELEDS round( NUM_LEDS / 2 )
 
-  if ( brightness < MIN_BRIGHT ) {
-    sequenceEnd = true ;
-  }
+// Adapted Fire2012. This version starts in the middle and mirrors the fire going down to both ends.
+// Works well with the Adafruit glow fur scarf.
+// FIRELEDS defines the position of the middle LED.
 
-  if ( not sequenceEnd ) {
-    if ( flowDir ) {
-      endP-- ;
-      startP = endP - 10 ;
-    } else {
-      startP++ ;
-      endP = startP + 10 ;
-    }
-
-    if ( startP == NUM_LEDS - 1 or endP == 1 ) {
-      sequenceEnd = true ;
-    }
-
-    middle = endP - round( (endP - startP) / 2 ) ;
-
-    startP = constrain(startP, 0, NUM_LEDS - 1) ;
-    middle = constrain(middle, 0, NUM_LEDS - 1) ;
-    endP = constrain(endP, 0, NUM_LEDS - 1) ;
-
-    brightness += bAdder ;
-    brightness = constrain(brightness, 0, MAX_BRIGHT) ;
-    if ( brightness >= MAX_BRIGHT ) {
-      bAdder = -10 ;
-    }
-
-    fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle + 1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
-
-  } else {
-
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    hue = random8(0, 60) ;
-    brightness = MIN_BRIGHT ;
-    bAdder = 15 ;
-    flowDir = ! flowDir ; // flip it!
-    sequenceEnd = false ;
-
-    if ( flowDir ) {
-      endP = random8(30, NUM_LEDS);
-    } else {
-      startP = random8(30, NUM_LEDS);
-    }
-  }
-
-  FastLED.show();
-}
-#endif  // pulse2
-
-// TODO
-#ifdef RT_PULSE3
-void pulse3() {
-  uint8_t middle ;
-  static uint8_t startP ;
-  static uint8_t endP ;
-  static uint8_t hue ;
-  static int brightness = 0 ;
-  static int bAdder = 1;
-  static bool sequenceEnd = true ;
-
-  if ( brightness < MIN_BRIGHT ) {
-    sequenceEnd = true ;
-  }
-
-  if ( not sequenceEnd ) {
-    startP++ ;
-    endP = startP + 10 ;
-
-    if ( startP == NUM_LEDS - 1 or endP == 1 ) {
-      sequenceEnd = true ;
-    }
-
-    middle = endP - round( (endP - startP) / 2 ) ;
-
-    startP = constrain(startP, 0, NUM_LEDS - 1) ;
-    middle = constrain(middle, 0, NUM_LEDS - 1) ;
-    endP = constrain(endP, 0, NUM_LEDS - 1) ;
-
-    brightness += bAdder ;
-    brightness = constrain(brightness, 0, MAX_BRIGHT) ;
-    if ( brightness >= MAX_BRIGHT ) {
-      bAdder = -10 ;
-    }
-
-    fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle + 1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
-
-  } else {
-
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    hue = random8(0, 60) ;
-    brightness = MIN_BRIGHT ;
-    bAdder = 15 ;
-    sequenceEnd = false ;
-
-    startP = random8(0, NUM_LEDS);
-  }
-
-  FastLED.show();
-}
-#endif
-
-#ifdef RT_PULSE_STATIC
-void pulse_static() {
-  int middle ;
-  static int startP ;
-  static int endP ;
-  static uint8_t hue ;
-  static int bAdder ;
-
-  static int brightness = 0 ;
-  static bool sequenceEnd ;
-
-  if ( brightness < MIN_BRIGHT ) {
-    sequenceEnd = true ;
-  }
-
-  // while brightness is more than MIN_BRIGHT, keep increasing brightness etc.
-  // If brightness drops below MIN_BRIGHT, we start a new sequence at a new position
-  if ( not sequenceEnd ) {
-    if ( bAdder < 0 and startP < endP ) {
-      startP++ ;
-      endP-- ;
-      if ( startP == endP ) {
-        sequenceEnd = true ;
-      }
-    }
-    if ( bAdder > 0  and ( endP - startP < 30 ) ) {
-      startP-- ;
-      endP++ ;
-    }
-    middle = endP - round( (endP - startP) / 2 ) ;
-
-    startP = constrain(startP, 0, NUM_LEDS - 1) ;
-    middle = constrain(middle, 0, NUM_LEDS - 1) ;
-    endP = constrain(endP, 0, NUM_LEDS - 1) ;
-
-    brightness += bAdder ;
-    brightness = constrain(brightness, 0, MAX_BRIGHT) ;
-    if ( brightness >= MAX_BRIGHT ) {
-      bAdder = -5 ;
-    }
-
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    fillGradientRing(startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness));
-    fillGradientRing(middle + 1, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0));
-
-    //    fill_gradient(leds, startP, CHSV(hue, 255, 0), middle, CHSV(hue, 255, brightness), SHORTEST_HUES);
-    //    fill_gradient(leds, middle, CHSV(hue, 255, brightness), endP, CHSV(hue, 255, 0), SHORTEST_HUES);
-    FastLED.show();
-  }
-
-  if ( sequenceEnd ) {
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    FastLED.show();
-    hue = random8(0, 60) ;
-    brightness = MIN_BRIGHT + 1 ;
-    bAdder = 10 ;
-    startP = random8(1, NUM_LEDS - 20);
-    endP = startP + 20 ;
-    sequenceEnd = false ;
-    taskLedModeSelect.setInterval(random16(200, 700)) ;
-  }
-}
-#endif
-
-
-/*
-  #define COOLING  55
-  #define SPARKING 120
-  #define FIRELEDS round( NUM_LEDS / 2 )
-
-  // Adapted Fire2012. This version starts in the middle and mirrors the fire going down to both ends.
-  // Works well with the Adafruit glow fur scarf.
-  // FIRELEDS defines the position of the middle LED.
-
-  void Fire2012()
-  {
+void Fire2012()
+{
   // Array of temperature readings at each simulation cell
   static byte heat[FIRELEDS];
 
@@ -336,8 +148,10 @@ void pulse_static() {
   }
 
   FastLED.show();
-  }
-*/
+
+} // end Fire2012
+#endif
+
 
 #ifdef RT_RACERS
 void racingLeds() {
@@ -377,7 +191,7 @@ void racingLeds() {
   //  loopCounter++ ;
 
   FastLED.show();
-}
+} // end racers()
 #endif
 
 
@@ -415,8 +229,12 @@ void shakeIt() {
 }
 #endif
 
+
 #ifdef WHITESTRIPE
 #define STRIPE_LENGTH 5
+
+// This routines goes "over" other patterns, remembering/copying the
+// pattern it is writing over and writing it back behind it.
 
 void whiteStripe() {
   static CRGB patternCopy[STRIPE_LENGTH] ;
@@ -457,16 +275,17 @@ void whiteStripe() {
 }
 #endif
 
-/*
-  void gLedOrig() {
+#ifdef RT_GLED_ORIGINAL
+void gLedOrig() {
   leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
   FastLED.show();
   fadeToBlackBy(leds, NUM_LEDS, 200);
-  }
-*/
+}
+#endif
 
 #ifdef RT_GLED
 
+// Gravity LED: lights up a small gradient at the lowest point on the ring
 #define GLED_WIDTH 3
 void gLed() {
   uint8_t ledPos = lowestPoint() ;
@@ -480,74 +299,13 @@ void gLed() {
 }
 #endif
 
-#ifdef RT_VUMETER
-void vuMeter() {
-  static int vuLength = 1 ;
-  static bool growing = true ;
-
-  int center = NUM_LEDS / 2 ;
-  int left = center + vuLength ;
-  int right = center - vuLength ;
-
-  if ( growing ) {
-    if ( vuLength < 23 ) {
-      leds[left] = CRGB::DarkGreen ;
-      leds[right] = CRGB::DarkGreen ;
-    } else {
-      leds[left] = CRGB::Red ;
-      leds[right] = CRGB::Red ;
-    }
-  } else {
-    leds[left - 1] = CRGB::Black ;
-    leds[right + 1] = CRGB::Black;
-  }
-
-  FastLED.setBrightness( MAX_BRIGHT );
-  FastLED.show();
-
-  if ( growing ) {
-    vuLength++ ;
-  } else {
-    vuLength-- ;
-  }
-
-  if ( vuLength >= (NUM_LEDS / 2)  or vuLength <= 0 ) {
-    growing = ! growing ;
-  }
-}
-
-
-void vuMeter2() {
-  static int vuLength = 1 ;
-  static bool growing = true ;
-  fill_solid(leds, NUM_LEDS, CRGB::Black );
-  fill_solid(leds + (NUM_LEDS / 2 - vuLength), vuLength, CRGB::Blue );
-  fill_solid(leds + NUM_LEDS / 2, vuLength, CRGB::Red );
-
-  FastLED.setBrightness( MAX_BRIGHT );
-  FastLED.show();
-
-  if ( growing ) {
-    vuLength++ ;
-  } else {
-    vuLength-- ;
-  }
-
-  if ( vuLength >= (NUM_LEDS / 2) or vuLength <= 1 ) {
-    growing = ! growing ;
-  }
-}
-
-#endif
 
 
 #ifdef RT_TWIRL1 || RT_TWIRL2 || RT_TWIRL4 || RT_TWIRL6 || RT_TWIRL2_O || RT_TWIRL4_O || RT_TWIRL6_O
 // Counter rotating twirlers with blending
-void twirlers(int numTwirlers, bool opposing ) {
-  int pos = 0 ;
-  int clockwiseFirst = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
-  //  CRGB clockwiseColor = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter() % 255, MAX_BRIGHT, NOBLEND );
-  //  CRGB antiClockwiseColor = ColorFromPalette( PartyColors_p, (255 - taskLedModeSelect.getRunCounter()) % 255, MAX_BRIGHT, NOBLEND );
+void twirlers(uint8_t numTwirlers, bool opposing ) {
+  uint8_t pos = 0 ;
+  uint8_t clockwiseFirst = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
   const CRGB clockwiseColor = CRGB::White ;
   const CRGB antiClockwiseColor = CRGB::Red ;
 
@@ -566,13 +324,13 @@ void twirlers(int numTwirlers, bool opposing ) {
         leds[pos] = clockwiseColor ;
       }
 
-      if ( pos == 0 ) { // We want LED 0 to be hit at every beat for the "even" LEDs
+      if ( pos == 0 ) { // We want LED 0 to be hit at every beat for the even/white/clockwise LEDs
         syncToBPM() ;
       }
 
     } else {
       if ( opposing ) {
-        int antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ; // normalized backwards counter
+        uint8_t antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ; // normalized backwards counter
         pos = (antiClockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
       } else {
         pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
@@ -587,7 +345,6 @@ void twirlers(int numTwirlers, bool opposing ) {
   }
   FastLED.show();
 }
-
 #endif
 
 
@@ -664,7 +421,7 @@ void heartbeat() {
     0
   };
 
-  static int arrayIndex = 0 ;
+  static uint8_t arrayIndex = 0 ;
   fill_solid(leds, NUM_LEDS, CRGB::Red);
   FastLED.setBrightness( hbTable[arrayIndex] );
   if ( hbTable[arrayIndex] == 0 ) {
@@ -685,8 +442,8 @@ void heartbeat() {
 #define MAX_LOOP_SPEED 5
 
 void fastLoop(bool reverse) {
-  static int startP = 0 ;  // start position
-  static int hue = 0 ;
+  static uint8_t startP = 0 ;  // start position
+  static uint8_t hue = 0 ;
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
   fillGradientRing(startP + FL_MIDPOINT + 1, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
@@ -821,12 +578,10 @@ void bounceBlend() {
 
   FastLED.show();
 
-  if ( (taskLedModeSelect.getRunCounter() % 5 ) == 0 ) {
-    if ( startLed + 1 == NUM_LEDS ) {
-      startLed == 0 ;
-    } else {
-      startLed++ ;
-    }
+
+  if ( (taskLedModeSelect.getRunCounter() % 10 ) == 0 ) {
+    startLed++ ;
+    if ( startLed + 1 == NUM_LEDS )  startLed == 0 ;
   }
 } // end bounceBlend()
 #endif
@@ -878,3 +633,83 @@ void jugglePal() {                                             // A time (rather
 } // end jugglePal()
 #endif
 
+
+#ifdef RT_QUAD_STROBE
+void quadStrobe() {
+  static uint8_t shift = 0 ;
+  uint8_t triwave = triwave8( taskLedModeSelect.getRunCounter() * 6 ) ;
+  uint8_t striplength = lerp8by8( 1, 16, triwave ) ;
+  uint8_t startP = mod( taskLedModeSelect.getRunCounter() * 15 + shift, NUM_LEDS ) ;
+
+  fill_solid( leds, NUM_LEDS, CRGB::Black ) ;
+  fillSolidRing( startP, startP + striplength, CHSV(0, 0, 255) ) ;
+  FastLED.show();
+  if ( striplength == 1 ) shift++ ;
+} // end quadStrobe()
+#endif
+
+
+#ifdef RT_PULSE_3
+#define PULSE_WIDTH 10
+
+void pulse3() {
+  static int width = 0 ;
+  static boolean growing = true ;
+  static int middle = 0 ;
+  static int numPulses = 0 ;
+  int hue = mod( map( yprX, 0, 360, 0, 255 ) + (numPulses * 30), 255) ; // add a color offset to each pulse
+
+  if ( width == PULSE_WIDTH ) {
+    growing = false ;
+    DEBUG_PRINTLN(F("max")) ;
+    numPulses++ ;
+  }
+
+  if ( width == 0 ) {
+    growing = true ;
+    middle = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
+    fill_solid(leds, NUM_LEDS, CRGB::Black);
+    DEBUG_PRINT(F("min\t")) ;
+  }
+
+  if ( growing ) {
+    width++ ;
+  } else {
+    width-- ;
+  }
+
+  fillGradientRing(middle - width, CHSV(hue, 255, 0), middle, CHSV(hue, 255, 255));
+  fillGradientRing(middle, CHSV(hue, 255, 255), middle + width, CHSV(hue, 255, 0));
+  FastLED.show() ;
+
+  if ( numPulses == 3 ) {
+    numPulses = 0 ;
+    syncToBPM() ;
+  }
+}
+#endif
+
+#ifdef RT_PULSE_5
+void pulse5( uint8_t numPulses, boolean leadingDot) {
+  uint8_t spacing = NUM_LEDS / numPulses ;
+  uint8_t pulseWidth = (spacing / 2) - 1 ; // leave 1 led empty at max
+  uint8_t middle = beatsin8( 5, 0, NUM_LEDS / 2) ;
+  uint8_t width = beatsin8( tapTempo.getBPM(), 0, pulseWidth) ;
+  uint8_t hue = map( yprX, 0, 360, 0, 255 ) ;
+
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+
+  for ( uint8_t i = 0 ; i < numPulses; i++ ) {
+    uint8_t offset = spacing * i ;
+    fillGradientRing(middle - width + offset, CHSV(hue, 255, 0), middle + offset, CHSV(hue, 255, 255));
+    fillGradientRing(middle + offset, CHSV(hue, 255, 255), middle + width + offset, CHSV(hue, 255, 0));
+
+    if ( leadingDot ) {  // abusing fill gradient since it deals with "ring math"
+      fillGradientRing(middle - width + offset, CHSV(0, 255, 255), middle - width + offset, CHSV(0, 255, 255));
+      fillGradientRing(middle + width + offset, CHSV(0, 255, 255), middle + width + offset, CHSV(0, 255, 255));
+    }
+  }
+
+  FastLED.show() ;
+}
+#endif
