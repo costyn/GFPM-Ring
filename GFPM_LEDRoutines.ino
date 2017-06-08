@@ -43,7 +43,13 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
     leds[i] = ColorFromPalette( palettes[paletteIndex], colorIndex, MAX_BRIGHT, LINEARBLEND );
     colorIndex += STEPS;
   }
-  addGlitter(80);
+
+  // add extra glitter during "fast"
+  if ( taskLedModeSelect.getInterval() < 5000 ) {
+    addGlitter(250);
+  } else {
+    addGlitter(80);
+  }
 
   FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
   FastLED.show();
@@ -212,16 +218,15 @@ void waveYourArms() {
 #define SENSITIVITY 2300  // lower for less movement to trigger
 
 void shakeIt() {
-  int startLed = 0 ;
+  uint8_t startLed = 0 ;
 
   if ( activityLevel() > SENSITIVITY ) {
     leds[startLed] = CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT); // yaw for color
   } else {
     leds[startLed] = CHSV(0, 0, 0); // black
-    //    leds[] = leds[NUM_LEDS - 1] ;  // uncomment for circular motion
   }
 
-  for (uint8_t i = NUM_LEDS - 2; i >= 0 ; i--) {
+  for (int8_t i = NUM_LEDS - 2; i >= 0 ; i--) {
     leds[i + 1] = leds[i];
   }
 
@@ -303,16 +308,28 @@ void gLed() {
 
 #ifdef RT_TWIRL1 || RT_TWIRL2 || RT_TWIRL4 || RT_TWIRL6 || RT_TWIRL2_O || RT_TWIRL4_O || RT_TWIRL6_O
 // Counter rotating twirlers with blending
+// 1 twirler - 1 white = 120/1
+// 2 twirler - 1 white = 120/1
+// 4 twirler - 2 white = 120/2
+// 6 twirler - 3 white = 120/3
+
 void twirlers(uint8_t numTwirlers, bool opposing ) {
   uint8_t pos = 0 ;
-  uint8_t clockwiseFirst = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
+  uint8_t speedCorrection = 0 ;
+
+  if ( numTwirlers == 1 ) {
+    speedCorrection = 1 ;
+  } else {
+    speedCorrection = numTwirlers / 2 ;
+  }
+  uint8_t clockwiseFirst = lerp8by8( 0, NUM_LEDS, beat8( tapTempo.getBPM() / speedCorrection )) ;
   const CRGB clockwiseColor = CRGB::White ;
   const CRGB antiClockwiseColor = CRGB::Red ;
 
   if ( opposing ) {
     fadeall(map( numTwirlers, 1, 6, 240, 180 ));
   } else {
-    fadeall(map( numTwirlers, 1, 6, 240, 150 ));
+    fadeall(map( numTwirlers, 1, 6, 240, 180 ));
   }
 
   for (uint8_t i = 0 ; i < numTwirlers ; i++) {
@@ -324,13 +341,10 @@ void twirlers(uint8_t numTwirlers, bool opposing ) {
         leds[pos] = clockwiseColor ;
       }
 
-      if ( pos == 0 ) { // We want LED 0 to be hit at every beat for the even/white/clockwise LEDs
-        syncToBPM() ;
-      }
-
     } else {
+
       if ( opposing ) {
-        uint8_t antiClockwiseFirst = NUM_LEDS - taskLedModeSelect.getRunCounter() % NUM_LEDS ; // normalized backwards counter
+        uint8_t antiClockwiseFirst = NUM_LEDS - (lerp8by8( 0, NUM_LEDS, beat8( tapTempo.getBPM() / speedCorrection ))) % NUM_LEDS ;
         pos = (antiClockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
       } else {
         pos = (clockwiseFirst + round( NUM_LEDS / numTwirlers ) * i) % NUM_LEDS ;
@@ -344,12 +358,12 @@ void twirlers(uint8_t numTwirlers, bool opposing ) {
 
   }
   FastLED.show();
+  taskLedModeSelect.setInterval( 1 * TASK_RES_MULTIPLIER ) ;
 }
 #endif
 
 
 #ifdef RT_HEARTBEAT
-// Todo: sync to BPM
 void heartbeat() {
   const uint8_t hbTable[] = {
     25,
@@ -402,34 +416,28 @@ void heartbeat() {
     47,
     43,
     39,
+    37,
     35,
     29,
     25,
     22,
+    20,
     19,
     15,
     12,
     9,
+    8,
     6,
+    5,
     3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    3,
-    0
   };
 
-  static uint8_t arrayIndex = 0 ;
+#define NUM_STEPS (sizeof(hbTable)/sizeof(uint8_t *)) //array size  
+
   fill_solid(leds, NUM_LEDS, CRGB::Red);
-  FastLED.setBrightness( hbTable[arrayIndex] );
-  if ( hbTable[arrayIndex] == 0 ) {
-    arrayIndex = 0 ;
-    syncToBPM() ;  // sync to BPM
-  } else {
-    arrayIndex++ ;
-  }
+  // beat8 generates index 0-255 (fract8) as per getBPM(). lerp8by8 interpolates that to array index
+  // TODO: lerp to MAX_BRIGHTNES
+  FastLED.setBrightness( heartbeat[lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() ))] );
   FastLED.show();
 }
 #endif
@@ -442,21 +450,20 @@ void heartbeat() {
 #define MAX_LOOP_SPEED 5
 
 void fastLoop(bool reverse) {
-  static uint8_t startP = 0 ;  // start position
+  static int16_t startP = 0 ;
   static uint8_t hue = 0 ;
+
+  if ( ! reverse ) {
+    startP = lerp8by8( 0, NUM_LEDS, beat8( tapTempo.getBPM() )) ;  // start position
+  } else {
+    startP += map( sin8( beat8( tapTempo.getBPM() / 4 )), 0, 255, -MAX_LOOP_SPEED, MAX_LOOP_SPEED + 1 ) ; // it was hard to write, it should be hard to undestand :grimacing:
+  }
+
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
   fillGradientRing(startP + FL_MIDPOINT + 1, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
   FastLED.show();
-  if ( reverse ) {
-    startP += map( cos8(hue % 255), 0, 255, -MAX_LOOP_SPEED, MAX_LOOP_SPEED + 1) ; // abuse the 'hue' counter
-  } else {
-    startP++ ;
-    if ( startP == 0 ) {
-      syncToBPM() ;  // only sync to BPM on forward loop
-    }
-  }
-  hue++ ;
+  hue++  ;
 
 }
 #endif
@@ -651,41 +658,20 @@ void quadStrobe() {
 
 #ifdef RT_PULSE_3
 #define PULSE_WIDTH 10
-
 void pulse3() {
-  static int width = 0 ;
-  static boolean growing = true ;
-  static int middle = 0 ;
-  static int numPulses = 0 ;
-  int hue = mod( map( yprX, 0, 360, 0, 255 ) + (numPulses * 30), 255) ; // add a color offset to each pulse
+  uint8_t width = beatsin8( constrain( tapTempo.getBPM() * 2, 0, 255), 0, PULSE_WIDTH ) ; // can't use BPM > 255
+  uint8_t hue = beatsin8( 1, 0, 255) ;
+  static uint8_t middle = 0 ;
 
-  if ( width == PULSE_WIDTH ) {
-    growing = false ;
-    DEBUG_PRINTLN(F("max")) ;
-    numPulses++ ;
+  if ( width == 1 ) {
+    middle = taskLedModeSelect.getRunCounter() % 60 + taskLedModeSelect.getRunCounter() % 2;
   }
 
-  if ( width == 0 ) {
-    growing = true ;
-    middle = taskLedModeSelect.getRunCounter() % NUM_LEDS ;
-    fill_solid(leds, NUM_LEDS, CRGB::Black);
-    DEBUG_PRINT(F("min\t")) ;
-  }
-
-  if ( growing ) {
-    width++ ;
-  } else {
-    width-- ;
-  }
-
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
   fillGradientRing(middle - width, CHSV(hue, 255, 0), middle, CHSV(hue, 255, 255));
   fillGradientRing(middle, CHSV(hue, 255, 255), middle + width, CHSV(hue, 255, 0));
-  FastLED.show() ;
 
-  if ( numPulses == 3 ) {
-    numPulses = 0 ;
-    syncToBPM() ;
-  }
+  FastLED.show() ;
 }
 #endif
 

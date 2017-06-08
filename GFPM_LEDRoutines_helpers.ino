@@ -164,7 +164,6 @@ void addGlitter( fract8 chanceOfGlitter)
 }
 
 
-
 #define LONG_PRESS_MIN_TIME 500  // minimum time for a long press
 #define SHORT_PRESS_MIN_TIME 100   // minimum time for a short press - debounce
 
@@ -227,6 +226,7 @@ int freeRam ()
 
 // Calculates difference between now and last time it was called
 // and adjusts the interval of taskLedModeSelect accordingly
+#ifdef SYNC_TO_BPM
 void syncToBPM() {
   static unsigned long lastTimeStamp = 0 ;
   unsigned long currentTimeStamp = millis() ;
@@ -240,7 +240,8 @@ void syncToBPM() {
   DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
 
   unsigned long delta = currentTimeStamp - lastTimeStamp ;
-  long syncFactor = delta - tapTempo.getBeatLength() ;
+  long syncFactor = ( delta - tapTempo.getBeatLength() ) * 5 ;
+  syncFactor = constrain( syncFactor, -3000, 3000 ) ;
  
   DEBUG_PRINT( F("\t") ) ;
   DEBUG_PRINT( syncFactor ) ;
@@ -254,3 +255,4 @@ void syncToBPM() {
   }
   lastTimeStamp = millis() ;
 }
+#endif
