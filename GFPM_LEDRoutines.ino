@@ -48,7 +48,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
   if ( taskLedModeSelect.getInterval() < 5000 ) {
     addGlitter(250);
   } else {
-    addGlitter(80);
+    addGlitter(25);
   }
 
   FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
@@ -306,7 +306,7 @@ void gLed() {
 
 
 
-#ifdef RT_TWIRL1 || RT_TWIRL2 || RT_TWIRL4 || RT_TWIRL6 || RT_TWIRL2_O || RT_TWIRL4_O || RT_TWIRL6_O
+#if defined(RT_TWIRL1) || defined(RT_TWIRL2) || defined(RT_TWIRL4) || defined(RT_TWIRL6) || defined(RT_TWIRL2_O) || defined(RT_TWIRL4_O) || defined(RT_TWIRL6_O)
 // Counter rotating twirlers with blending
 // 1 twirler - 1 white = 120/1
 // 2 twirler - 1 white = 120/1
@@ -435,15 +435,16 @@ void heartbeat() {
 #define NUM_STEPS (sizeof(hbTable)/sizeof(uint8_t *)) //array size  
 
   fill_solid(leds, NUM_LEDS, CRGB::Red);
-  // beat8 generates index 0-255 (fract8) as per getBPM(). lerp8by8 interpolates that to array index
-  // TODO: lerp to MAX_BRIGHTNES
-  FastLED.setBrightness( heartbeat[lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() ))] );
+  // beat8 generates index 0-255 (fract8) as per getBPM(). lerp8by8 interpolates that to array index:
+  uint8_t hbIndex = lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() )) ; 
+  uint8_t brightness = lerp8by8( 0, MAX_BRIGHT, hbTable[hbIndex] ) ;
+  FastLED.setBrightness( brightness );
   FastLED.show();
 }
 #endif
 
 
-#ifdef RT_FASTLOOP || RT_FASTLOOP2
+#if defined(RT_FASTLOOP) || defined(RT_FASTLOOP2)
 
 #define FL_LENGHT 20   // how many LEDs should be in the "stripe"
 #define FL_MIDPOINT FL_LENGHT / 2
@@ -469,7 +470,7 @@ void fastLoop(bool reverse) {
 #endif
 
 
-#ifdef RT_NOISE_LAVA || RT_NOISE_PARTY
+#if defined(RT_NOISE_LAVA) || defined(RT_NOISE_PARTY)
 // FastLED library NoisePlusPalette routine rewritten for 1 dimensional LED strip
 // - speed determines how fast time moves forward.  Try  1 for a very slow moving effect,
 // or 60 for something that ends up looking like water.
@@ -588,7 +589,7 @@ void bounceBlend() {
 
   if ( (taskLedModeSelect.getRunCounter() % 10 ) == 0 ) {
     startLed++ ;
-    if ( startLed + 1 == NUM_LEDS )  startLed == 0 ;
+    if ( startLed + 1 == NUM_LEDS ) startLed = 0  ;
   }
 } // end bounceBlend()
 #endif
@@ -609,7 +610,6 @@ void jugglePal() {                                             // A time (rather
   static uint8_t   thisdiff =  16;                                     // Incremental change in hue between each dot.
   static uint8_t    thishue =   0;                                     // Starting hue.
   static uint8_t     curhue =   0;                                     // The current hue
-  static uint8_t    thissat = 255;                                     // Saturation of the colour.
   static uint8_t thisbright = MAX_BRIGHT;                               // How bright should the LED/display be.
   static uint8_t   thisbeat =   35;                                     // Higher = faster movement.
 
@@ -698,4 +698,73 @@ void pulse5( uint8_t numPulses, boolean leadingDot) {
 
   FastLED.show() ;
 }
+#endif
+
+
+
+#ifdef RT_THREE_SIN_PAL
+
+/* three_sin_pal_demo
+   By: Andrew Tuline
+   Date: March, 2015
+   3 sine waves, one for each colour. I didn't take this far, but you could change the beat frequency and so on. . .
+*/
+#define MAXCHANGES 24
+// Frequency, thus the distance between waves:
+#define MUL1 7
+#define MUL2 6
+#define MUL3 5
+void threeSinPal() {
+  static int wave1 = 0;                                                // Current phase is calculated.
+  static int wave2 = 0;
+  static int wave3 = 0;
+
+  static CRGBPalette16 currentPalette(CRGB::Black);
+  static CRGBPalette16 targetPalette(PartyColors_p);
+
+  if ( taskLedModeSelect.getRunCounter() % 2 == 0 ) {
+    nblendPaletteTowardPalette( currentPalette, targetPalette, MAXCHANGES);
+
+    wave1 += beatsin8(10, -4, 4);
+    wave2 += beatsin8(15, -2, 2);
+    wave3 += beatsin8(12, -3, 3);
+
+    for (int k = 0; k < NUM_LEDS; k++) {
+      uint8_t tmp = sin8(MUL1 * k + wave1) + sin8(MUL2 * k + wave2) + sin8(MUL3 * k + wave3);
+      leds[k] = ColorFromPalette(currentPalette, tmp, 255);
+    }
+
+  }
+
+  uint8_t secondHand = (millis() / 1000) % 60;
+  static uint8_t lastSecond = 99;
+
+  if ( lastSecond != secondHand) {
+    lastSecond = secondHand;
+    CRGB p = CHSV( HUE_PURPLE, 255, 255);
+    CRGB g = CHSV( HUE_GREEN, 255, 255);
+    CRGB u = CHSV( HUE_BLUE, 255, 255);
+    CRGB b = CRGB::Black;
+    CRGB w = CRGB::White;
+
+    switch (secondHand) {
+      case  0: targetPalette = RainbowColors_p; break;
+      case  5: targetPalette = CRGBPalette16( u, u, b, b, p, p, b, b, u, u, b, b, p, p, b, b); break;
+      case 10: targetPalette = OceanColors_p; break;
+      case 15: targetPalette = CloudColors_p; break;
+      case 20: targetPalette = LavaColors_p; break;
+      case 25: targetPalette = ForestColors_p; break;
+      case 30: targetPalette = PartyColors_p; break;
+      case 35: targetPalette = CRGBPalette16( b, b, b, w, b, b, b, w, b, b, b, w, b, b, b, w); break;
+      case 40: targetPalette = CRGBPalette16( u, u, u, w, u, u, u, w, u, u, u, w, u, u, u, w); break;
+      case 45: targetPalette = CRGBPalette16( u, p, u, w, p, u, u, w, u, g, u, w, u, p, u, w); break;
+      case 50: targetPalette = CloudColors_p; break;
+      case 55: targetPalette = CRGBPalette16( u, u, u, w, u, u, p, p, u, p, p, p, u, p, p, w); break;
+      case 60: break;
+    }
+  }
+
+  FastLED.show();
+
+} // threeSinPal()
 #endif
