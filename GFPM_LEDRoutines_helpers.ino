@@ -48,12 +48,12 @@ void fillSolidRing( int startLed, int endLed, CHSV color ) {
       fill_solid(leds + actualStart, actualEnd - actualStart, color);
     }
   }
-}
+} // end fillSolidRing()
 
 
 
-
-#define OFFSET 8   // offset for aligning gyro "bottom" with LED "bottom" - depends on orientation of ring led 0 vs gyro - determine experimentally
+// offset for aligning gyro "bottom" with LED "bottom" - depends on orientation of ring led 0 vs gyro - determine experimentally
+#define OFFSET 8   
 
 // This routine needs pitch/roll information in floats, so we need to retrieve it separately
 //  Suggestions how to fix this/clean it up welcome.
@@ -121,23 +121,6 @@ int lowestPoint() {
   }
 
   return currentLedPos ;
-
-
-  /*
-    DEBUG_PRINT(myYprP) ;
-    DEBUG_PRINT("\t") ;
-    DEBUG_PRINT(myYprR) ;
-    DEBUG_PRINT("\t") ;
-    DEBUG_PRINT(ratio) ;
-    DEBUG_PRINT("\t") ;
-    DEBUG_PRINT(targetLedPos) ;
-    DEBUG_PRINT("\t") ;
-    DEBUG_PRINT(currentLedPos) ;
-    DEBUG_PRINT("\t") ;
-    DEBUG_PRINT(mySpeed) ;
-    DEBUG_PRINTLN() ;
-  */
-
 }
 
 
@@ -201,7 +184,7 @@ void checkButtonPress() {
             ledMode = 0;
           }
 
-          FastLED.setBrightness( MAX_BRIGHT ) ; // reset it to 'default'
+          FastLED.setBrightness( maxBright ) ; // reset it to 'default'
         }
       }
     }
@@ -224,35 +207,3 @@ int freeRam ()
 
 
 
-// Calculates difference between now and last time it was called
-// and adjusts the interval of taskLedModeSelect accordingly
-#ifdef SYNC_TO_BPM
-void syncToBPM() {
-  static unsigned long lastTimeStamp = 0 ;
-  unsigned long currentTimeStamp = millis() ;
-
-  DEBUG_PRINT( tapTempo.getBPM() ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( tapTempo.getBeatLength() ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( currentTimeStamp - lastTimeStamp ) ;
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( taskLedModeSelect.getInterval() ) ;
-
-  unsigned long delta = currentTimeStamp - lastTimeStamp ;
-  long syncFactor = ( delta - tapTempo.getBeatLength() ) * 5 ;
-  syncFactor = constrain( syncFactor, -3000, 3000 ) ;
- 
-  DEBUG_PRINT( F("\t") ) ;
-  DEBUG_PRINT( syncFactor ) ;
-  DEBUG_PRINTLN() ;
-
-  if ( delta != tapTempo.getBeatLength() ) {  // we're outta sync, try harder :)
-    taskLedModeSelect.setInterval( taskLedModeSelect.getInterval() - syncFactor ) ;
-  } else {
-    DEBUG_PRINT( F("\tsync\t") ) ; // we're in sync, hooray!
-    DEBUG_PRINTLN( tapTempo.getBPM() ) ; 
-  }
-  lastTimeStamp = millis() ;
-}
-#endif

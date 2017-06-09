@@ -38,9 +38,6 @@ void getDMPData() {
   getYPRAccel() ;
 }
 
-
-
-
 // display Euler angles in degrees
 void getYPRAccel() {
   // orientation/motion vars
@@ -64,32 +61,68 @@ void getYPRAccel() {
   aaRealY = aaReal.y ;
   aaRealZ = aaReal.z ;
 
-  int maxXY    = max( aaReal.x, aaReal.y) ;
-  int maxAccel = max( maxXY, aaReal.z) ;
+  bool isVertical   = ( abs( ypr[1] * 180 / M_PI ) + abs( ypr[2] * 180 / M_PI ) > 65.0 ) ;
 
-  static int inBeat = false; // debounce variable
+  int16_t maxXY    = max( aaReal.x, aaReal.y) ;
+  int16_t maxAccel = max( maxXY, aaReal.z) ;
 
-  if ( maxAccel > 7000 and inBeat == false ) {
-    inBeat = true ;
-    if ( longPressActive ) {   // only count BPM when button is held down
+  static bool inBeat = false; // debounce variable - only update tapTempo once during high acceleration
+  static bool firstPress = true ;
+  static uint16_t initialYaw ;
+
+  // only count BPM when button is held down
+  if ( isVertical and longPressActive ) {
+    if ( maxAccel > 7000 and inBeat == false ) {
+      inBeat = true ;
       tapTempo.update(true);
       digitalWrite(BUTTON_LED_PIN, HIGH); // Beat detected, light up to show beat detected
-    }
-  } else if ( maxAccel < 7000 ) {
-    inBeat = false ;
-    tapTempo.update(false);
-    
-    if ( longPressActive ) {
+
+    } else if ( maxAccel < 7000 ) {
+      inBeat = false ;
+      tapTempo.update(false);
       digitalWrite(BUTTON_LED_PIN, LOW); // turn off LED, normal operation
-    } else {  // normal operation; flash LED in time with BPM
-      if ( tapTempo.beatProgress() > 0.95 ) {
-        digitalWrite(BUTTON_LED_PIN, HIGH); // turn on LED, normal operation
-      } else {
-        digitalWrite(BUTTON_LED_PIN, LOW); // turn on LED, normal operation
-      }
     }
+  } else if ( ! isVertical and longPressActive ) {
+    if ( firstPress ) { // check if this is the first iteration where button is pressed, remember yaw.
+      initialYaw = yprX ;
+      firstPress = false ;
+    }
+
+    if ( taskGetDMPData.getRunCounter() % 30 == 0 ) { // fast blinking to indicate brightness adjustment process
+      digitalWrite(BUTTON_LED_PIN, HIGH);
+    } else {
+      digitalWrite(BUTTON_LED_PIN, LOW);
+    }
+
+#define RANGE 30
+    int conYprX = constrain( yprX, initialYaw - RANGE, initialYaw + RANGE) ;
+    maxBright = map( conYprX, initialYaw - RANGE, initialYaw + RANGE, 0, 255) ;
+//        DEBUG_PRINT(F("\t"));
+//        DEBUG_PRINT(yprX);
+//        DEBUG_PRINT(F("\t"));
+//        DEBUG_PRINT(initialYaw);
+//        DEBUG_PRINT(F("\t"));
+//        DEBUG_PRINT(conYprX);
+//        DEBUG_PRINT(F("\t"));
+//        DEBUG_PRINT(maxBright);
+//        DEBUG_PRINT(F("\t"));
+//        DEBUG_PRINTLN();
+  }
+  
+  if ( ! longPressActive ) {
+    tapTempo.update(false);  // needs to be here even though we are not measuring beats
+
+    if ( tapTempo.beatProgress() > 0.95 ) {
+      digitalWrite(BUTTON_LED_PIN, HIGH); // turn on LED, normal operation
+    } else {
+      digitalWrite(BUTTON_LED_PIN, LOW); // turn on LED, normal operation
+    }
+
+    firstPress = true ;
   }
 }
+
+
 
 
 
@@ -114,6 +147,7 @@ bool isMpuDown() {
   return yprZ < 90 ;
 }
 
+
 bool isYawReliable() {
 #define MAXANGLE 45
   // Check if yprY or yprZ are tilted more than MAXANGLE. 90 = level
@@ -122,6 +156,7 @@ bool isYawReliable() {
 }
 
 
+#ifdef DEBUG_WITH_TASK
 void printDebugging() {
   DEBUG_PRINT(yprX);
   DEBUG_PRINT(F("\t"));
@@ -144,6 +179,4 @@ void printDebugging() {
   DEBUG_PRINT( freeRam() ) ;
   DEBUG_PRINTLN() ;
 }
-
-
-
+#endif

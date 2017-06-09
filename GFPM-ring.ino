@@ -3,15 +3,12 @@
 
    By: Costyn van Dongen
 
-   Future ideas:
-   - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I  (for strip, not ring)
-
    Note: MAX LEDS: 255 (due to use of uint8_t in for loops)
 
    TODO:
        Get rid of MPU interrupt stuff. I don't need it, but removing it without breaking shit is tricky.
-       three-sin-pal-demo
        ripple-pal
+       - color rain https://www.youtube.com/watch?v=nHBImYTDZ9I  (for strip, not ring)
 */
 
 // Turn on microsecond resolution; needed to sync some routines to BPM
@@ -29,6 +26,7 @@
 
 // Uncomment for debug output to Serial.
 //#define DEBUG
+//#define DEBUG_WITH_TASK
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x)       Serial.print (x)
@@ -42,8 +40,8 @@
 
 #define TASK_RES_MULTIPLIER 1000
 
-#define DOTSTAR
-//#define NEO_PIXEL
+//#define DOTSTAR
+#define NEO_PIXEL
 
 #ifdef NEO_PIXEL
 #define CHIPSET     WS2812B
@@ -53,6 +51,7 @@
 #endif
 
 #ifdef DOTSTAR
+#error Compiling for DOTSTAR, are you sure you want this?
 #define CHIPSET     APA102
 #define DATA_PIN     12
 #define CLOCK_PIN    11
@@ -60,13 +59,13 @@
 #define COLOR_ORDER  BGR
 #endif
 
-#define MAX_BRIGHT  100  // 0-255, higher number is brighter. 
+#define DEFAULT_BRIGHTNESS  100  // 0-255, higher number is brighter. 
 #define BUTTON_PIN  3   // button is connected to pin 3 and GND
 #define BUTTON_LED_PIN 5   // pin to which the button LED is attached
 
 
 CRGB leds[NUM_LEDS];
-// unsigned long lastButtonChange = 0; // button debounce timer.
+uint8_t maxBright = DEFAULT_BRIGHTNESS ;
 
 // BPM and button stuff
 boolean longPressActive = false;
@@ -83,33 +82,33 @@ ArduinoTapTempo tapTempo;
 //#define RT_P_LAVA
 //#define RT_P_PARTY
 //#define RT_P_FOREST
-//#define RT_TWIRL1
-//#define RT_TWIRL2
-//#define RT_TWIRL4
-//#define RT_TWIRL6
-//#define RT_TWIRL2_O
-//#define RT_TWIRL4_O
+#define RT_TWIRL1
+#define RT_TWIRL2
+#define RT_TWIRL4
+#define RT_TWIRL6
+#define RT_TWIRL2_O
+#define RT_TWIRL4_O
 //#define RT_TWIRL6_O
 //#define RT_FADE_GLITTER
 //#define RT_DISCO_GLITTER
 //#define RT_RACERS
-//#define RT_WAVE
-//#define RT_SHAKE_IT
+#define RT_WAVE
+#define RT_SHAKE_IT
 //#define RT_STROBE1
 //#define RT_STROBE2
 ////#define RT_VUMETER  // TODO - broken/unfinished
 //#define RT_GLED
 //#define RT_HEARTBEAT
-//#define RT_FASTLOOP
+#define RT_FASTLOOP
 //#define RT_FASTLOOP2
 //#define RT_PENDULUM
 //#define RT_BOUNCEBLEND
-//#define RT_JUGGLE_PAL
+#define RT_JUGGLE_PAL
 //#define RT_NOISE_LAVA
 //#define RT_NOISE_PARTY
-//#define RT_QUAD_STROBE
-//#define RT_PULSE_3
-//#define RT_PULSE_5
+#define RT_QUAD_STROBE
+#define RT_PULSE_3
+#define RT_PULSE_5
 //#define RT_THREE_SIN_PAL
 //#define RT_BLACK
 
@@ -285,7 +284,7 @@ void getDMPData() ; // prototype method
 Task taskGetDMPData( 3 * TASK_RES_MULTIPLIER, TASK_FOREVER, &getDMPData);
 
 
-#ifdef DEBUG
+#ifdef DEBUG_WITH_TASK
 void printDebugging() ; // prototype method
 Task taskPrintDebugging( 100000, TASK_FOREVER, &printDebugging);
 #endif
@@ -301,7 +300,7 @@ void setup() {
 #ifdef DOTSTAR
   FastLED.addLeds<CHIPSET, DATA_PIN, CLOCK_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 #endif
-  FastLED.setBrightness(  MAX_BRIGHT );
+  FastLED.setBrightness(  maxBright );
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(BUTTON_LED_PIN, OUTPUT);
   digitalWrite(BUTTON_LED_PIN, HIGH);
@@ -370,9 +369,9 @@ void setup() {
   runner.addTask(taskGetDMPData);
   taskGetDMPData.enable() ;
 
-#ifdef DEBUG
-  //    runner.addTask(taskPrintDebugging);
-  //    taskPrintDebugging.enable() ;
+#ifdef DEBUG_WITH_TASK
+  runner.addTask(taskPrintDebugging);
+  taskPrintDebugging.enable() ;
 #endif
 
 

@@ -40,7 +40,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
   uint8_t colorIndex = startIndex ;
 
   for ( uint8_t i = 0; i < NUM_LEDS; i++) {
-    leds[i] = ColorFromPalette( palettes[paletteIndex], colorIndex, MAX_BRIGHT, LINEARBLEND );
+    leds[i] = ColorFromPalette( palettes[paletteIndex], colorIndex, maxBright, LINEARBLEND );
     colorIndex += STEPS;
   }
 
@@ -51,7 +51,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
     addGlitter(25);
   }
 
-  FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, MAX_BRIGHT, 0 )) ;
+  FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, maxBright, 0 )) ;
   FastLED.show();
 
   taskLedModeSelect.setInterval( beatsin16( tapTempo.getBPM(), 1500, 50000) ) ;
@@ -61,6 +61,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
 #ifdef RT_FADE_GLITTER
 void fadeGlitter() {
   addGlitter(90);
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
   fadeToBlackBy(leds, NUM_LEDS, 200);
 }
@@ -70,6 +71,7 @@ void fadeGlitter() {
 void discoGlitter() {
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   addGlitter(map( constrain( activityLevel(), 0, 3000), 0, 3000, 100, 255 ));
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
@@ -78,12 +80,13 @@ void discoGlitter() {
 #define FLASHLENGTH 20
 void strobe1() {
   if ( tapTempo.beatProgress() > 0.95 ) {
-    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT)); // yaw for color
+    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, 255)); // yaw for color
   } else if ( tapTempo.beatProgress() > 0.80 and tapTempo.beatProgress() < 0.85 ) {
-    fill_solid(leds, NUM_LEDS, CHSV( 0, 0, MAX_BRIGHT)); // white with brightness
+    fill_solid(leds, NUM_LEDS, CRGB::White );
   } else {
     fill_solid(leds, NUM_LEDS, CRGB::Black); // black
   }
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
@@ -93,7 +96,7 @@ void strobe1() {
 
 void strobe2() {
   if ( activityLevel() > S_SENSITIVITY ) {
-    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT)); // yaw for color
+    fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ), 255, maxBright)); // yaw for color
   } else {
     fadeall(120);
   }
@@ -152,7 +155,7 @@ void Fire2012()
     CRGB color = HeatColor( heat[j]);
     leds[ledIndex] = color;
   }
-
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 
 } // end Fire2012
@@ -194,8 +197,7 @@ void racingLeds() {
     }
   }
 
-  //  loopCounter++ ;
-
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 } // end racers()
 #endif
@@ -208,7 +210,9 @@ void racingLeds() {
 
 void waveYourArms() {
   // Use yaw for color; use accelZ for brightness
-  fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ) , 255, map( constrain(aaRealZ, WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL), WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL, MIN_BRIGHT, MAX_BRIGHT )) );
+  fill_solid(leds, NUM_LEDS, CHSV( map( yprX, 0, 360, 0, 255 ) , 255, map( constrain(aaRealZ, WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL), WAVE_MAX_NEG_ACCEL, WAVE_MAX_POS_ACCEL, MIN_BRIGHT, 255 )) );
+
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
@@ -221,7 +225,7 @@ void shakeIt() {
   uint8_t startLed = 0 ;
 
   if ( activityLevel() > SENSITIVITY ) {
-    leds[startLed] = CHSV( map( yprX, 0, 360, 0, 255 ), 255, MAX_BRIGHT); // yaw for color
+    leds[startLed] = CHSV( map( yprX, 0, 360, 0, 255 ), 255, 255); // yaw for color
   } else {
     leds[startLed] = CHSV(0, 0, 0); // black
   }
@@ -230,6 +234,7 @@ void shakeIt() {
     leds[i + 1] = leds[i];
   }
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
@@ -276,13 +281,14 @@ void whiteStripe() {
     taskWhiteStripe.setInterval(random16(4000, 10000)) ;
   }
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
 
 #ifdef RT_GLED_ORIGINAL
 void gLedOrig() {
-  leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), MAX_BRIGHT, NOBLEND );
+  leds[lowestPoint()] = ColorFromPalette( PartyColors_p, taskLedModeSelect.getRunCounter(), maxBright, NOBLEND );
   FastLED.show();
   fadeToBlackBy(leds, NUM_LEDS, 200);
 }
@@ -295,11 +301,10 @@ void gLedOrig() {
 void gLed() {
   uint8_t ledPos = lowestPoint() ;
   static uint8_t hue = 0 ;
-  //  fill_solid(leds, NUM_LEDS, CRGB::Black );
   fillGradientRing( ledPos, CHSV(hue, 255, 0) , ledPos + GLED_WIDTH , CHSV(hue, 255, 255) ) ;
   fillGradientRing( ledPos + GLED_WIDTH + 1, CHSV(hue, 255, 255), ledPos + GLED_WIDTH + GLED_WIDTH, CHSV(hue, 255, 0) ) ;
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
-  fadeall(250);
   hue++ ;
 }
 #endif
@@ -357,6 +362,7 @@ void twirlers(uint8_t numTwirlers, bool opposing ) {
     }
 
   }
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
   taskLedModeSelect.setInterval( 1 * TASK_RES_MULTIPLIER ) ;
 }
@@ -436,8 +442,8 @@ void heartbeat() {
 
   fill_solid(leds, NUM_LEDS, CRGB::Red);
   // beat8 generates index 0-255 (fract8) as per getBPM(). lerp8by8 interpolates that to array index:
-  uint8_t hbIndex = lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() )) ; 
-  uint8_t brightness = lerp8by8( 0, MAX_BRIGHT, hbTable[hbIndex] ) ;
+  uint8_t hbIndex = lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() )) ;
+  uint8_t brightness = lerp8by8( 0, maxBright, hbTable[hbIndex] ) ;
   FastLED.setBrightness( brightness );
   FastLED.show();
 }
@@ -461,8 +467,10 @@ void fastLoop(bool reverse) {
   }
 
   fill_solid(leds, NUM_LEDS, CRGB::Black);
-  fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, MAX_BRIGHT));
-  fillGradientRing(startP + FL_MIDPOINT + 1, CHSV(hue, 255, MAX_BRIGHT), startP + FL_LENGHT, CHSV(hue, 255, 0));
+  fillGradientRing(startP, CHSV(hue, 255, 0), startP + FL_MIDPOINT, CHSV(hue, 255, 255));
+  fillGradientRing(startP + FL_MIDPOINT + 1, CHSV(hue, 255, 255), startP + FL_LENGHT, CHSV(hue, 255, 0));
+
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
   hue++  ;
 
@@ -555,6 +563,7 @@ void fillnoise8(uint8_t currentPalette, uint8_t speed, uint8_t scale, boolean co
   }
   ihue += 1;
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 }
 #endif
@@ -565,10 +574,11 @@ void pendulum() {
   uint8_t hue = map( yprX, 0, 360, 0, 255 ) ; // yaw for color
   uint8_t sPos1 = beatsin8( tapTempo.getBPM(), 0, 30 ) ;
   uint8_t sPos2 = beatsin8( tapTempo.getBPM(), 30, 60 ) ;
-  fillGradientRing(sPos1, CHSV(hue, 255, 0), sPos1 + 10, CHSV(hue, 255, MAX_BRIGHT));
-  fillGradientRing(sPos1 + 11, CHSV(hue, 255, MAX_BRIGHT), sPos1 + 20, CHSV(hue, 255, 0));
-  fillGradientRing(sPos2, CHSV(hue + 128, 255, 0), sPos2 + 10, CHSV(hue + 128, 255, MAX_BRIGHT));
-  fillGradientRing(sPos2 + 11, CHSV(hue + 128, 255, MAX_BRIGHT), sPos2 + 20, CHSV(hue + 128, 255, 0));
+  fillGradientRing(sPos1, CHSV(hue, 255, 0), sPos1 + 10, CHSV(hue, 255, 255));
+  fillGradientRing(sPos1 + 11, CHSV(hue, 255, 255), sPos1 + 20, CHSV(hue, 255, 0));
+  fillGradientRing(sPos2, CHSV(hue + 128, 255, 0), sPos2 + 10, CHSV(hue + 128, 255, 255));
+  fillGradientRing(sPos2 + 11, CHSV(hue + 128, 255, 255), sPos2 + 20, CHSV(hue + 128, 255, 0));
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 } // end pendulum()
 #endif
@@ -584,8 +594,8 @@ void bounceBlend() {
   fillGradientRing(startLed, endclr, startLed + NUM_LEDS / 2, midclr);
   fillGradientRing(startLed + NUM_LEDS / 2 + 1, midclr, startLed + NUM_LEDS, endclr);
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
-
 
   if ( (taskLedModeSelect.getRunCounter() % 10 ) == 0 ) {
     startLed++ ;
@@ -610,7 +620,6 @@ void jugglePal() {                                             // A time (rather
   static uint8_t   thisdiff =  16;                                     // Incremental change in hue between each dot.
   static uint8_t    thishue =   0;                                     // Starting hue.
   static uint8_t     curhue =   0;                                     // The current hue
-  static uint8_t thisbright = MAX_BRIGHT;                               // How bright should the LED/display be.
   static uint8_t   thisbeat =   35;                                     // Higher = faster movement.
 
   uint8_t secondHand = (millis() / 1000) % 60;                // Change '60' to a different value to change duration of the loop (also change timings below)
@@ -631,10 +640,11 @@ void jugglePal() {                                             // A time (rather
   fadeToBlackBy(leds, NUM_LEDS, thisfade);
 
   for ( uint8_t i = 0; i < numdots; i++) {
-    leds[beatsin16(thisbeat + i + numdots, 0, NUM_LEDS - 1)] += ColorFromPalette(RainbowColors_p, curhue, thisbright, LINEARBLEND); // Munge the values and pick a colour from the palette
+    leds[beatsin16(thisbeat + i + numdots, 0, NUM_LEDS - 1)] += ColorFromPalette(RainbowColors_p, curhue, 255, LINEARBLEND); // Munge the values and pick a colour from the palette
     curhue += thisdiff;
   }
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 
 } // end jugglePal()
@@ -642,6 +652,8 @@ void jugglePal() {                                             // A time (rather
 
 
 #ifdef RT_QUAD_STROBE
+
+// TODO: make strobes shorter
 void quadStrobe() {
   static uint8_t shift = 0 ;
   uint8_t triwave = triwave8( taskLedModeSelect.getRunCounter() * 6 ) ;
@@ -649,9 +661,12 @@ void quadStrobe() {
   uint8_t startP = mod( taskLedModeSelect.getRunCounter() * 15 + shift, NUM_LEDS ) ;
 
   fill_solid( leds, NUM_LEDS, CRGB::Black ) ;
-  fillSolidRing( startP, startP + striplength, CHSV(0, 0, 255) ) ;
+  fillSolidRing( startP, startP + striplength, CHSV(0, 0, 255) ) ; // white
+
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
-  if ( striplength == 1 ) shift++ ;
+
+  if ( striplength == 1 ) shift++ ; // shift the sequence on clockwise
 } // end quadStrobe()
 #endif
 
@@ -671,6 +686,7 @@ void pulse3() {
   fillGradientRing(middle - width, CHSV(hue, 255, 0), middle, CHSV(hue, 255, 255));
   fillGradientRing(middle, CHSV(hue, 255, 255), middle + width, CHSV(hue, 255, 0));
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show() ;
 }
 #endif
@@ -696,6 +712,7 @@ void pulse5( uint8_t numPulses, boolean leadingDot) {
     }
   }
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show() ;
 }
 #endif
@@ -733,7 +750,6 @@ void threeSinPal() {
       uint8_t tmp = sin8(MUL1 * k + wave1) + sin8(MUL2 * k + wave2) + sin8(MUL3 * k + wave3);
       leds[k] = ColorFromPalette(currentPalette, tmp, 255);
     }
-
   }
 
   uint8_t secondHand = (millis() / 1000) % 60;
@@ -764,6 +780,7 @@ void threeSinPal() {
     }
   }
 
+  FastLED.setBrightness( maxBright ) ;
   FastLED.show();
 
 } // threeSinPal()
