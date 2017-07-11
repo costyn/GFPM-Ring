@@ -20,6 +20,8 @@
 #include <MPU6050_6Axis_MotionApps20.h>
 #include <ArduinoTapTempo.h>
 
+#define DEFAULT_LED_MODE 5
+
 #if FASTLED_VERSION < 3001000
 #error "Requires FastLED 3.1 or later; check github for latest code."
 #endif
@@ -60,8 +62,8 @@
 #endif
 
 #define DEFAULT_BRIGHTNESS  100  // 0-255, higher number is brighter. 
-#define BUTTON_PIN  3   // button is connected to pin 3 and GND
-#define BUTTON_LED_PIN 5   // pin to which the button LED is attached
+#define BUTTON_PIN  6   // button is connected to pin 3 and GND
+#define BUTTON_LED_PIN 7   // pin to which the button LED is attached
 
 
 CRGB leds[NUM_LEDS];
@@ -76,43 +78,45 @@ ArduinoTapTempo tapTempo;
 // Most are kept commented during development for less code to
 // and staying within AVR328's flash/ram limits.
 
-//#define RT_P_RB_STRIPE
-//#define RT_P_OCEAN
-//#define RT_P_HEAT
-//#define RT_P_LAVA
-//#define RT_P_PARTY
-//#define RT_P_FOREST
+#define RT_P_RB_STRIPE
+#define RT_P_OCEAN
+#define RT_P_HEAT
+#define RT_P_LAVA
+#define RT_P_PARTY
+#define RT_P_FOREST
 #define RT_TWIRL1
 #define RT_TWIRL2
 #define RT_TWIRL4
 #define RT_TWIRL6
 #define RT_TWIRL2_O
 #define RT_TWIRL4_O
-//#define RT_TWIRL6_O
-//#define RT_FADE_GLITTER
-//#define RT_DISCO_GLITTER
-//#define RT_RACERS
+#define RT_TWIRL6_O
+#define RT_FADE_GLITTER
+#define RT_DISCO_GLITTER
+#define RT_RACERS
 #define RT_WAVE
 #define RT_SHAKE_IT
-//#define RT_STROBE1
-//#define RT_STROBE2
+#define RT_STROBE1
+#define RT_STROBE2
 ////#define RT_VUMETER  // TODO - broken/unfinished
-//#define RT_GLED
-//#define RT_HEARTBEAT
+#define RT_GLED
+#define RT_HEARTBEAT
 #define RT_FASTLOOP
-//#define RT_FASTLOOP2
-//#define RT_PENDULUM
-//#define RT_BOUNCEBLEND
+#define RT_FASTLOOP2
+#define RT_PENDULUM
+#define RT_BOUNCEBLEND
 #define RT_JUGGLE_PAL
-//#define RT_NOISE_LAVA
-//#define RT_NOISE_PARTY
+#define RT_NOISE_LAVA
+#define RT_NOISE_PARTY
 #define RT_QUAD_STROBE
 #define RT_PULSE_3
-#define RT_PULSE_5
-//#define RT_THREE_SIN_PAL
+#define RT_PULSE_5_1
+#define RT_PULSE_5_2
+#define RT_PULSE_5_3
+#define RT_THREE_SIN_PAL
 //#define RT_BLACK
 
-byte ledMode = 0 ; // Which mode do we start with
+byte ledMode = DEFAULT_LED_MODE ; // Which mode do we start with
 
 // Routine Palette Rainbow is always included - a safe routine
 const char *routines[] = {
@@ -210,8 +214,14 @@ const char *routines[] = {
 #ifdef RT_PULSE_3
   "pulse3",
 #endif
-#ifdef RT_PULSE_5
-  "pulse5",
+#ifdef RT_PULSE_5_1
+  "pulse5_1",
+#endif
+#ifdef RT_PULSE_5_2
+  "pulse5_2",
+#endif
+#ifdef RT_PULSE_5_3
+  "pulse5_3",
 #endif
 #ifdef RT_THREE_SIN_PAL
   "tsp",
@@ -342,12 +352,14 @@ void setup() {
   // Ring MPU
   // -287  4 1560  -29 -4  15
   // -381  209 1476  -24 0 -23
-  mpu.setXAccelOffset(-381 );
-  mpu.setYAccelOffset(209);
-  mpu.setZAccelOffset(1476);
-  mpu.setXGyroOffset(-24);
-  mpu.setYGyroOffset(0);
-  mpu.setZGyroOffset(-23);
+  //  Your offsets:  -313  145 1556  -27 -4  21
+  mpu.setXAccelOffset(-313 );
+  mpu.setYAccelOffset(145);
+  mpu.setZAccelOffset(1556);
+  mpu.setXGyroOffset(-27);
+  mpu.setYGyroOffset(-4);
+  mpu.setZGyroOffset(21);
+
 
   if (devStatus == 0) {
     mpu.setDMPEnabled(true);
@@ -374,6 +386,7 @@ void setup() {
   taskPrintDebugging.enable() ;
 #endif
 
+  tapTempo.setBPM( 120 ) ; // set default BPM
 
 }  // end setup()
 
@@ -465,7 +478,8 @@ void ledModeSelect() {
 #ifdef RT_FADE_GLITTER
   } else if ( strcmp(routines[ledMode], "fglitter") == 0 ) {
     fadeGlitter() ;
-    taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 4000), 0, 4000, 20, 5 ) * TASK_RES_MULTIPLIER ) ;
+    //taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 4000), 0, 4000, 20, 5 ) * TASK_RES_MULTIPLIER ) ;
+    taskLedModeSelect.setInterval( map( constrain( activityLevel(), 0, 2500), 0, 2500, 40, 2 ) * TASK_RES_MULTIPLIER ) ;
 #endif
 
 #ifdef RT_DISCO_GLITTER
@@ -521,6 +535,7 @@ void ledModeSelect() {
 #ifdef RT_HEARTBEAT
   } else if ( strcmp(routines[ledMode], "heartbeat") == 0 ) {
     heartbeat() ;
+    taskLedModeSelect.setInterval( 5 * TASK_RES_MULTIPLIER ) ;
 #endif
 
 #ifdef RT_VUMETER
@@ -584,9 +599,21 @@ void ledModeSelect() {
     taskLedModeSelect.setInterval( 10 * TASK_RES_MULTIPLIER ) ;
 #endif
 
-#ifdef RT_PULSE_5
-  } else if ( strcmp(routines[ledMode], "pulse5") == 0 ) {
-    pulse5(3, false);
+#ifdef RT_PULSE_5_1
+  } else if ( strcmp(routines[ledMode], "pulse5_1") == 0 ) {
+    pulse5(1, true);
+    taskLedModeSelect.setInterval( 10 * TASK_RES_MULTIPLIER ) ;
+#endif
+
+#ifdef RT_PULSE_5_2
+  } else if ( strcmp(routines[ledMode], "pulse5_2") == 0 ) {
+    pulse5(2, true);
+    taskLedModeSelect.setInterval( 10 * TASK_RES_MULTIPLIER ) ;
+#endif
+
+#ifdef RT_PULSE_5_3
+  } else if ( strcmp(routines[ledMode], "pulse5_3") == 0 ) {
+    pulse5(3, true);
     taskLedModeSelect.setInterval( 10 * TASK_RES_MULTIPLIER ) ;
 #endif
 

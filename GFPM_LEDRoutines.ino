@@ -51,7 +51,7 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
     addGlitter(25);
   }
 
-  FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, maxBright, 0 )) ;
+  FastLED.setBrightness( map( constrain(aaRealZ, 0, P_MAX_POS_ACCEL), 0, P_MAX_POS_ACCEL, maxBright, 10 )) ;
   FastLED.show();
 
   taskLedModeSelect.setInterval( beatsin16( tapTempo.getBPM(), 1500, 50000) ) ;
@@ -60,10 +60,10 @@ void FillLEDsFromPaletteColors(uint8_t paletteIndex ) {
 
 #ifdef RT_FADE_GLITTER
 void fadeGlitter() {
-  addGlitter(90);
+  addGlitter(70);
   FastLED.setBrightness( maxBright ) ;
   FastLED.show();
-  fadeToBlackBy(leds, NUM_LEDS, 200);
+  fadeToBlackBy(leds, NUM_LEDS, 50);
 }
 #endif
 
@@ -332,9 +332,9 @@ void twirlers(uint8_t numTwirlers, bool opposing ) {
   const CRGB antiClockwiseColor = CRGB::Red ;
 
   if ( opposing ) {
-    fadeall(map( numTwirlers, 1, 6, 240, 180 ));
+    fadeall(map( numTwirlers, 1, 6, 240, 230 ));
   } else {
-    fadeall(map( numTwirlers, 1, 6, 240, 180 ));
+    fadeall(map( numTwirlers, 1, 6, 240, 230 ));
   }
 
   for (uint8_t i = 0 ; i < numTwirlers ; i++) {
@@ -435,15 +435,22 @@ void heartbeat() {
     8,
     6,
     5,
-    3,
+    3
   };
 
-#define NUM_STEPS (sizeof(hbTable)/sizeof(uint8_t *)) //array size  
-
+#define NUM_STEPS (sizeof(hbTable)/sizeof(uint8_t)) //array size
+//#define NUM_STEPS 64
   fill_solid(leds, NUM_LEDS, CRGB::Red);
   // beat8 generates index 0-255 (fract8) as per getBPM(). lerp8by8 interpolates that to array index:
-  uint8_t hbIndex = lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM() )) ;
+  uint8_t hbIndex = lerp8by8( 0, NUM_STEPS, beat8( tapTempo.getBPM()/2 )) ;
   uint8_t brightness = lerp8by8( 0, maxBright, hbTable[hbIndex] ) ;
+//  DEBUG_PRINT(NUM_STEPS) ;
+//  DEBUG_PRINT(F("\t")) ;
+//  DEBUG_PRINT(hbIndex) ;
+//  DEBUG_PRINT(F("\t")) ;
+//  DEBUG_PRINT(brightness) ;
+//  DEBUG_PRINTLN() ;
+
   FastLED.setBrightness( brightness );
   FastLED.show();
 }
@@ -589,8 +596,8 @@ void pendulum() {
 void bounceBlend() {
   uint8_t speed = beatsin8( tapTempo.getBPM(), 0, 255);
   static uint8_t startLed = 1 ;
-  CHSV endclr = blend(CHSV(0, 255, 255), CHSV(160, 255, 255) , speed);
-  CHSV midclr = blend(CHSV(160, 255, 255) , CHSV(0, 255, 255) , speed);
+  CHSV endclr = blend(CHSV(0, 255, 255), CHSV(160, 255, 0) , speed);
+  CHSV midclr = blend(CHSV(160, 255, 0) , CHSV(0, 255, 255) , speed);
   fillGradientRing(startLed, endclr, startLed + NUM_LEDS / 2, midclr);
   fillGradientRing(startLed + NUM_LEDS / 2 + 1, midclr, startLed + NUM_LEDS, endclr);
 
@@ -628,8 +635,8 @@ void jugglePal() {                                             // A time (rather
   if (lastSecond != secondHand) {                             // Debounce to make sure we're not repeating an assignment.
     lastSecond = secondHand;
     switch (secondHand) {
-      case  0: numdots = 1; thisbeat = tapTempo.getBPM() / 2; thisdiff = 8;  thisfade = 8;  thishue = 0;   break;
-      case  7: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 4;  thisfade = 12; thishue = 0;   break;
+      case  1: numdots = 1; thisbeat = tapTempo.getBPM() / 2; thisdiff = 8;  thisfade = 8;  thishue = 0;   break;
+      case  6: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 4;  thisfade = 12; thishue = 0;   break;
       case 25: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 50; thishue = 128; break;
       case 40: numdots = 2; thisbeat = tapTempo.getBPM() / 2; thisdiff = 16; thisfade = 50; thishue = 0; break;
       case 52: numdots = 4; thisbeat = tapTempo.getBPM() / 2; thisdiff = 24; thisfade = 80; thishue = 160; break;
@@ -691,11 +698,11 @@ void pulse3() {
 }
 #endif
 
-#ifdef RT_PULSE_5
+#if defined(RT_PULSE_5_1) || defined(RT_PULSE_5_2) || defined(RT_PULSE_5_3)
 void pulse5( uint8_t numPulses, boolean leadingDot) {
   uint8_t spacing = NUM_LEDS / numPulses ;
   uint8_t pulseWidth = (spacing / 2) - 1 ; // leave 1 led empty at max
-  uint8_t middle = beatsin8( 5, 0, NUM_LEDS / 2) ;
+  uint8_t middle = beatsin8( 10, 0, NUM_LEDS / 2) ;
   uint8_t width = beatsin8( tapTempo.getBPM(), 0, pulseWidth) ;
   uint8_t hue = map( yprX, 0, 360, 0, 255 ) ;
 

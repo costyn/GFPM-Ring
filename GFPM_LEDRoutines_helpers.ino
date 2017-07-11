@@ -53,7 +53,7 @@ void fillSolidRing( int startLed, int endLed, CHSV color ) {
 
 
 // offset for aligning gyro "bottom" with LED "bottom" - depends on orientation of ring led 0 vs gyro - determine experimentally
-#define OFFSET 8   
+#define OFFSET -4
 
 // This routine needs pitch/roll information in floats, so we need to retrieve it separately
 //  Suggestions how to fix this/clean it up welcome.
@@ -91,7 +91,7 @@ int lowestPoint() {
     ratio =  (abs( myYprR ) / (abs(myYprP) + abs(myYprR))) * 100 ;
     targetLedPos = map( ratio, 0, 100, 45 , 60 );
   } else {
-    DEBUG_PRINT(F("\tWTF\t")) ;  // This should never happen
+    DEBUG_PRINTLN(F("\tWTF\t")) ;  // This should never happen
   }
   targetLedPos = mod(targetLedPos + OFFSET, NUM_LEDS) ;
 
@@ -175,14 +175,14 @@ void checkButtonPress() {
       } else {
         if ( millis() - buttonTimer > SHORT_PRESS_MIN_TIME ) {
           ledMode++;
+          if (ledMode == NUMROUTINES ) {
+            ledMode = 0;
+          }
+
           DEBUG_PRINT(F("ledMode = ")) ;
           DEBUG_PRINT( routines[ledMode] ) ;
           DEBUG_PRINT(F(" mode ")) ;
           DEBUG_PRINTLN( ledMode ) ;
-
-          if (ledMode >= NUMROUTINES ) {
-            ledMode = 0;
-          }
 
           FastLED.setBrightness( maxBright ) ; // reset it to 'default'
         }
